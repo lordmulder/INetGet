@@ -26,7 +26,7 @@
 
 int wmain(int argc, wchar_t* argv[])
 {
-	URL url(L"http://www.google.de:8080/file.html?lol=rofl");
+	URL url(L"http:// www.google.de :8080/file.html?lol=rofl");
 
 	std::wcerr << url.getScheme()    << std::endl;
 	std::wcerr << url.getHostName()  << std::endl;
@@ -37,6 +37,13 @@ int wmain(int argc, wchar_t* argv[])
 	std::wcerr << url.getExtraInfo() << std::endl;
 	std::wcerr << std::endl;
 	std::wcerr << url.toString()     << std::endl;
+	std::wcerr << std::endl;
+
+	URL url2;
+	url2.setHostName(L" google.de ");
+	url2.setUrlPath(L"asdasd");
+	std::wcerr << url2.toString()    << std::endl;
+	std::wcerr << std::endl;
 
 	return getchar();
 }

@@ -28,8 +28,9 @@
 class URL
 {
 public:
+	URL(void);
 	URL(const wchar_t *const url);
-	~URL();
+	~URL(void);
 
 	//Getter
 	inline const std::wstring &getScheme   (void) const { return m_strScheme;    }
@@ -41,13 +42,16 @@ public:
 	inline const uint16_t     &getPort     (void) const { return m_uiPortNumber; }
 
 	//Setter
-	inline void setScheme   (const wchar_t *const scheme)    { m_strScheme   = scheme;     }
-	inline void getHostName (const wchar_t *const hostName)  { m_strHostName = hostName;   }
-	inline void getUserName (const wchar_t *const userName)  { m_strUserName = userName;   }
-	inline void getPassword (const wchar_t *const password)  { m_strPassword = password;   }
-	inline void getUrlPath  (const wchar_t *const urlPath)   { m_strUrlPath  = urlPath;    }
-	inline void getExtraInfo(const wchar_t *const extraInfo) { m_strExtraInfo = extraInfo; }
-	inline void getPort     (const uint16_t port)            { m_uiPortNumber;             }
+	inline void setScheme   (const wchar_t *const scheme)    { m_strScheme    = scheme;    }
+	inline void setHostName (const wchar_t *const hostName)  { m_strHostName  = hostName;  }
+	inline void setUserName (const wchar_t *const userName)  { m_strUserName  = userName;  }
+	inline void setPassword (const wchar_t *const password)  { m_strPassword  = password;  }
+	inline void setUrlPath  (const wchar_t *const urlPath)   { m_strUrlPath   = urlPath;   }
+	inline void setExtraInfo(const wchar_t *const extraInfo) { m_strExtraInfo = extraInfo; }
+	inline void setPort     (const uint16_t &port)           { m_uiPortNumber = port;      }
+
+	//Complete?
+	bool isComplete(void) const;
 
 	//Create URL
 	std::wstring toString(void) const;

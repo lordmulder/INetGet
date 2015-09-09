@@ -29,6 +29,13 @@
 #define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? std::wstring(components.lpsz##X, components.dw##X##Length) : std::wstring())
 #define RETR_URL_STRING(X) ((LPWSTR) (m_str##X.empty() ? NULL : m_str##X.c_str()))
 
+URL::URL(void)
+:
+	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
+{
+	/*nothing to do*/
+}
+
 URL::URL(const wchar_t *const url)
 :
 	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
@@ -83,28 +90,51 @@ std::wstring URL::toString(void) const
 	components.lpszExtraInfo     = RETR_URL_STRING(ExtraInfo);
 	components.nPort             = m_uiPortNumber;
 
-	if(components.lpszScheme && (components.nPort == INTERNET_INVALID_PORT_NUMBER))
+	if(components.nPort == INTERNET_INVALID_PORT_NUMBER)
 	{
-		if(_wcsicmp(components.lpszScheme, L"http")   == 0) components.nPort = INTERNET_DEFAULT_HTTP_PORT;
-		if(_wcsicmp(components.lpszScheme, L"https")  == 0) components.nPort = INTERNET_DEFAULT_HTTPS_PORT;
-		if(_wcsicmp(components.lpszScheme, L"ftp")    == 0) components.nPort = INTERNET_DEFAULT_FTP_PORT;
-		if(_wcsicmp(components.lpszScheme, L"gopher") == 0) components.nPort = INTERNET_DEFAULT_GOPHER_PORT;
+		if(components.lpszScheme)
+		{
+			if(_wcsicmp(components.lpszScheme, L"http")   == 0) components.nPort = INTERNET_DEFAULT_HTTP_PORT;
+			if(_wcsicmp(components.lpszScheme, L"https")  == 0) components.nPort = INTERNET_DEFAULT_HTTPS_PORT;
+			if(_wcsicmp(components.lpszScheme, L"ftp")    == 0) components.nPort = INTERNET_DEFAULT_FTP_PORT;
+			if(_wcsicmp(components.lpszScheme, L"gopher") == 0) components.nPort = INTERNET_DEFAULT_GOPHER_PORT;
+		}
+		else
+		{
+			components.nPort = INTERNET_DEFAULT_HTTP_PORT;
+		}
 	}
 
-	DWORD len = 64;
-	len += components.dwSchemeLength;
-	len += components.dwHostNameLength;
-	len += components.dwUserNameLength;
-	len += components.dwPasswordLength;
-	len += components.dwUrlPathLength;
-	len += components.dwExtraInfoLength;
-
-	std::vector<wchar_t> temp(len, L'\0');
-
-	if(InternetCreateUrl(&components, 0, temp.data(), &len))
+	for(DWORD buffSize = 32; buffSize <= MAXWORD; buffSize *= 2)
 	{
-		return std::wstring(temp.data(), len);
+		DWORD len = buffSize;
+		len += components.dwSchemeLength;
+		len += components.dwHostNameLength;
+		len += components.dwUserNameLength;
+		len += components.dwPasswordLength;
+		len += components.dwUrlPathLength;
+		len += components.dwExtraInfoLength;
+
+		std::vector<wchar_t> temp(len, L'\0');
+		if(InternetCreateUrl(&components, 0, temp.data(), &len))
+		{
+			return std::wstring(temp.data(), len);
+		}
+
+		const DWORD err = GetLastError();
+		if(err != ERROR_INSUFFICIENT_BUFFER)
+		{
+			break; /*other error*/
+		}
 	}
 	
 	return std::wstring();
+}
+
+bool URL::isComplete(void) const
+{
+	if(m_strScheme  .empty()) return false;
+	if(m_strHostName.empty()) return false;
+	if(m_strUrlPath .empty()) return false;
+	return true;
 }
