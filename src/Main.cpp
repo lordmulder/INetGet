@@ -21,11 +21,45 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "URL.h"
+#include "Utils.h"
 
 #include <iostream>
 
+static void test(const wchar_t *const str)
+{
+	std::wcout << L'"' << trim(std::wstring(str)) << L"\" <= \"" << str << L'"' << std::endl;
+}
+
 int wmain(int argc, wchar_t* argv[])
 {
+	/*
+	test(L"");
+	test(L" ");
+	test(L"  ");
+	test(L"   ");
+	
+	std::wcout << std::endl;
+
+	test(L"!");
+	test(L"!  ");
+	test(L" ! ");
+	test(L"  !");
+
+	std::wcout << std::endl;
+
+	test(L"! ! !");
+	test(L"! ! !      ");
+	test(L"   ! ! !   ");
+	test(L"      ! ! !");
+
+		std::wcout << std::endl;
+
+	test(L"lorem ipsom dalar");
+	test(L"lorem ipsom dalar      ");
+	test(L"   lorem ipsom dalar   ");
+	test(L"      lorem ipsom dalar");
+	*/
+
 	URL url(L"http:// www.google.de :8080/file.html?lol=rofl");
 
 	std::wcerr << url.getScheme()    << std::endl;

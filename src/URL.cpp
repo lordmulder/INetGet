@@ -26,7 +26,7 @@
 #include <WinInet.h>
 #include <vector>
 
-#define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? std::wstring(components.lpsz##X, components.dw##X##Length) : std::wstring())
+#define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? trim(std::wstring(components.lpsz##X, components.dw##X##Length)) : std::wstring())
 #define RETR_URL_STRING(X) ((LPWSTR) (m_str##X.empty() ? NULL : m_str##X.c_str()))
 
 URL::URL(void)
@@ -94,9 +94,9 @@ std::wstring URL::toString(void) const
 	{
 		if(components.lpszScheme)
 		{
-			if(_wcsicmp(components.lpszScheme, L"http")   == 0) components.nPort = INTERNET_DEFAULT_HTTP_PORT;
-			if(_wcsicmp(components.lpszScheme, L"https")  == 0) components.nPort = INTERNET_DEFAULT_HTTPS_PORT;
-			if(_wcsicmp(components.lpszScheme, L"ftp")    == 0) components.nPort = INTERNET_DEFAULT_FTP_PORT;
+			if(_wcsicmp(components.lpszScheme, L"http"  ) == 0) components.nPort = INTERNET_DEFAULT_HTTP_PORT;
+			if(_wcsicmp(components.lpszScheme, L"https" ) == 0) components.nPort = INTERNET_DEFAULT_HTTPS_PORT;
+			if(_wcsicmp(components.lpszScheme, L"ftp"   ) == 0) components.nPort = INTERNET_DEFAULT_FTP_PORT;
 			if(_wcsicmp(components.lpszScheme, L"gopher") == 0) components.nPort = INTERNET_DEFAULT_GOPHER_PORT;
 		}
 		else
