@@ -22,8 +22,10 @@
 
 #include "URL.h"
 #include "Utils.h"
+#include "Params.h"
 
 #include <iostream>
+#include <stdexcept>
 
 static void test(const wchar_t *const str)
 {
@@ -32,6 +34,15 @@ static void test(const wchar_t *const str)
 
 int wmain(int argc, wchar_t* argv[])
 {
+	try
+	{
+		Params params(argc, argv);
+	}
+	catch(std::invalid_argument &e)
+	{
+		std::cerr << "Invalid arguments: " << e.what() << std::endl;
+	}
+
 	/*
 	test(L"");
 	test(L" ");
@@ -60,6 +71,7 @@ int wmain(int argc, wchar_t* argv[])
 	test(L"      lorem ipsom dalar");
 	*/
 
+	/*
 	URL url(L"http:// www.google.de :8080/file.html?lol=rofl");
 
 	std::wcerr << url.getScheme()    << std::endl;
@@ -78,7 +90,8 @@ int wmain(int argc, wchar_t* argv[])
 	url2.setUrlPath(L"asdasd");
 	std::wcerr << url2.toString()    << std::endl;
 	std::wcerr << std::endl;
+	*/
 
-	return getchar();
+	return 0; //getchar();
 }
 

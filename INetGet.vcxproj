@@ -12,10 +12,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp" />
+    <ClCompile Include="src\Params.cpp" />
     <ClCompile Include="src\URL.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Params.h" />
     <ClInclude Include="src\URL.h" />
     <ClInclude Include="src\Utils.h" />
   </ItemGroup>
