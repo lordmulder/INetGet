@@ -24,74 +24,121 @@
 #include "Utils.h"
 #include "Params.h"
 
+#include <Windows.h>
 #include <iostream>
 #include <stdexcept>
+#include <io.h>
+#include <fcntl.h>
 
-static void test(const wchar_t *const str)
+#if (defined(NDEBUG) && defined(_DEBUG)) || ((!defined(NDEBUG)) && (!defined(_DEBUG)))
+#error Inconsistent DEBUG flags!
+#endif
+
+//=============================================================================
+// INTERNAL FUNCTIONS
+//=============================================================================
+
+static const char *BUILD_DATE = __DATE__;
+static const char *BUILD_TIME = __TIME__;
+
+#ifdef _M_X64
+static const char *BUILD_ARCH = "x64";
+#else
+static const char *BUILD_ARCH = "x86";
+#endif
+
+static void printLogo(void)
 {
-	std::wcout << L'"' << trim(std::wstring(str)) << L"\" <= \"" << str << L'"' << std::endl;
+	std::wcerr << L"\nINetGet - Lightweight command-line front-end to WinInet API" << std::endl;
+	std::wcerr << L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved." << std::endl;
+	std::wcerr << L"Built on " << BUILD_DATE << " at " << BUILD_TIME << " with Visual C++ v" << _MSC_VER << " (" << BUILD_ARCH << ")\n" << std::endl;
+}
+
+//=============================================================================
+// MAIN
+//=============================================================================
+
+static int inetget_main(const int argc, const wchar_t *const argv[])
+{
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_U8TEXT);
+
+	printLogo();
+
+	Params params;
+	if(!params.initialize(argc, argv))
+	{
+		std::wcerr << "Invalid command-line arguments, type \"INetGet.exe --help\" for details!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+//=============================================================================
+// ERROR HANDLING
+//=============================================================================
+
+static void my_invalid_param_handler(const wchar_t* exp, const wchar_t* fun, const wchar_t* fil, unsigned int, uintptr_t)
+{
+	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
+	_exit(EXIT_FAILURE);
+}
+
+static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
+{
+	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
+	_exit(EXIT_FAILURE);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
+static void setup_error_handlers(void)
+{
+	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
+	SetUnhandledExceptionFilter(my_exception_handler);
+	_set_invalid_parameter_handler(my_invalid_param_handler);
+	SetDllDirectoryW(L""); /*don'tload DLL from "current" directory*/
+}
+
+//=============================================================================
+// ENTRY POINT
+//=============================================================================
+
+static int wmain_ex(const int argc, const wchar_t *const argv[])
+{
+	int ret = -1;
+	try
+	{
+		ret = inetget_main(argc, argv);
+	}
+	catch(std::exception &err)
+	{
+		std::wcerr << "\n\nUNHANDELED EXCEPTION: " << err.what() << '\n' << std::endl;
+		_exit(EXIT_FAILURE);
+	}
+	catch(...)
+	{
+		std::wcerr << "\n\nUNHANDELED EXCEPTION: Unknown C++ exception error!\n" << std::endl;
+		_exit(EXIT_FAILURE);
+	}
+	return ret;
 }
 
 int wmain(int argc, wchar_t* argv[])
 {
-	try
+	int ret = -1;
+#ifdef NDEBUG
+	__try
 	{
-		Params params(argc, argv);
+		setup_error_handlers();
+		ret = wmain_ex(argc, argv);
 	}
-	catch(std::invalid_argument &e)
+	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		std::cerr << "Invalid arguments: " << e.what() << std::endl;
+		std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception error, application will exit!\n" << std::endl;
 	}
-
-	/*
-	test(L"");
-	test(L" ");
-	test(L"  ");
-	test(L"   ");
-	
-	std::wcout << std::endl;
-
-	test(L"!");
-	test(L"!  ");
-	test(L" ! ");
-	test(L"  !");
-
-	std::wcout << std::endl;
-
-	test(L"! ! !");
-	test(L"! ! !      ");
-	test(L"   ! ! !   ");
-	test(L"      ! ! !");
-
-		std::wcout << std::endl;
-
-	test(L"lorem ipsom dalar");
-	test(L"lorem ipsom dalar      ");
-	test(L"   lorem ipsom dalar   ");
-	test(L"      lorem ipsom dalar");
-	*/
-
-	/*
-	URL url(L"http:// www.google.de :8080/file.html?lol=rofl");
-
-	std::wcerr << url.getScheme()    << std::endl;
-	std::wcerr << url.getHostName()  << std::endl;
-	std::wcerr << url.getPort()      << std::endl;
-	std::wcerr << url.getUserName()  << std::endl;
-	std::wcerr << url.getPassword()  << std::endl;
-	std::wcerr << url.getUrlPath()   << std::endl;
-	std::wcerr << url.getExtraInfo() << std::endl;
-	std::wcerr << std::endl;
-	std::wcerr << url.toString()     << std::endl;
-	std::wcerr << std::endl;
-
-	URL url2;
-	url2.setHostName(L" google.de ");
-	url2.setUrlPath(L"asdasd");
-	std::wcerr << url2.toString()    << std::endl;
-	std::wcerr << std::endl;
-	*/
-
-	return 0; //getchar();
+#else
+	ret =  inetget_main(argc, argv);
+#endif
+	return ret;
 }
-

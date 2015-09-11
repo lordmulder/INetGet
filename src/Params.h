@@ -27,11 +27,23 @@
 class Params
 {
 public:
-	Params(const int argc, wchar_t *const argv[]);
-	~Params();
+	Params(void);
+	~Params(void);
+
+	bool initialize(const int argc, const wchar_t *const argv[]);
+
+	//Getter
+	inline const std::wstring &getSource(  void) const { return m_strSource; }
+	inline const std::wstring &getOutput  (void) const { return m_strOutput; }
+	inline const bool         &getShowHelp(void) const { return m_bShowHelp; }
 
 private:
-	void processParamN(const size_t n, const std::wstring &param);
-	void processOption(const std::wstring &option);
+	bool processParamN(const size_t n, const std::wstring &param);
+	bool processOption(const std::wstring &option);
+
+	std::wstring m_strSource;
+	std::wstring m_strOutput;
+
+	bool m_bShowHelp;
 };
 

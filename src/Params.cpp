@@ -27,10 +27,21 @@
 
 #include "Utils.h"
 
-Params::Params(const int argc, wchar_t *const argv[])
+Params::Params(void)
+{
+	m_bShowHelp = false;
+}
+
+Params::~Params()
+{
+}
+
+bool Params::initialize(const int argc, const wchar_t *const argv[])
 {
 	const std::wstring marker(L"--");
-	bool stopFlag = false; size_t counter = 0;
+
+	bool stopFlag = false;
+	size_t argCounter = 0;
 
 	for(int i = 1; i < argc; i++)
 	{
@@ -39,7 +50,10 @@ Params::Params(const int argc, wchar_t *const argv[])
 		{
 			if(current.length() > marker.length())
 			{
-				processOption(trim(current.substr(2, std::wstring::npos)));
+				if(!processOption(trim(current.substr(2, std::wstring::npos))))
+				{
+					return false;
+				}
 			}
 			else
 			{
@@ -48,31 +62,40 @@ Params::Params(const int argc, wchar_t *const argv[])
 		}
 		else
 		{
-			processParamN(counter++, current);
+			if(!processParamN(argCounter++, current))
+			{
+				return false;
+			}
 		}
 	}
+
+	if(!(m_bShowHelp || (argCounter >= 2)))
+	{
+		std::wcerr << L"Error: Required parameter is missing!\n" << std::endl;
+		return false;
+	}
+
+	return true;
 }
 
-Params::~Params()
-{
-}
-
-void Params::processParamN(const size_t n, const std::wstring &param)
+bool Params::processParamN(const size_t n, const std::wstring &param)
 {
 	switch(n)
 	{
 	case 0:
-		std::wcout << L"Param #1: \"" << param << '"' << std::endl;
-		break;
+		m_strSource = param;
+		return true;
 	case 1:
-		std::wcout << L"Param #2: \"" << param << '"' << std::endl;
-		break;
+		m_strOutput = param;
+		return true;
 	default:
-		throw std::invalid_argument("Too many parameters!");
+		std::wcerr << L"Error: Excess parameter \"" << param << L"\" detected!\n" << std::endl;
+		return false;
 	}
 }
 
-void Params::processOption(const std::wstring &option)
+bool Params::processOption(const std::wstring &option)
 {
-	std::wcout << L"Option: \"" << option << '"' << std::endl;
+	std::wcerr << L"Option: \"" << option << "\"\n" << std::endl;
+	return true;
 }
