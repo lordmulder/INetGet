@@ -26,17 +26,19 @@
 #include <WinInet.h>
 #include <vector>
 
+#include "Utils.h"
+
 #define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? trim(std::wstring(components.lpsz##X, components.dw##X##Length)) : std::wstring())
-#define RETR_URL_STRING(X) ((LPWSTR) (m_str##X.empty() ? NULL : m_str##X.c_str()))
 
 URL::URL(void)
 :
+	m_iSchemeId(INTERNET_SCHEME_UNKNOWN),
 	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
 {
 	/*nothing to do*/
 }
 
-URL::URL(const wchar_t *const url)
+URL::URL(const std::wstring &url)
 :
 	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
 {
@@ -52,7 +54,7 @@ URL::URL(const wchar_t *const url)
 	components.dwUrlPathLength   = DWORD(-1);
 	components.dwExtraInfoLength = DWORD(-1);
 
-	if(InternetCrackUrl(url, 0, 0, &components))
+	if(InternetCrackUrl(url.c_str(), 0, 0, &components))
 	{
 		m_strScheme    = INIT_URL_STRING(Scheme);
 		m_strHostName  = INIT_URL_STRING(HostName);
@@ -61,6 +63,7 @@ URL::URL(const wchar_t *const url)
 		m_strUrlPath   = INIT_URL_STRING(UrlPath);
 		m_strExtraInfo = INIT_URL_STRING(ExtraInfo);
 		m_uiPortNumber = components.nPort;
+		m_iSchemeId    = components.nScheme;
 	}
 }
 
@@ -68,73 +71,11 @@ URL::~URL()
 {
 }
 
-std::wstring URL::toString(void) const
-{
-	URL_COMPONENTS components;
-	SecureZeroMemory(&components, sizeof(URL_COMPONENTS));
-
-	components.dwStructSize      = sizeof(URL_COMPONENTS);
-
-	components.dwSchemeLength    = m_strScheme   .length();
-	components.dwHostNameLength  = m_strHostName .length();
-	components.dwUserNameLength  = m_strUserName .length();
-	components.dwPasswordLength  = m_strPassword .length();
-	components.dwUrlPathLength   = m_strUrlPath  .length();
-	components.dwExtraInfoLength = m_strExtraInfo.length();
-
-	components.lpszScheme        = RETR_URL_STRING(Scheme);
-	components.lpszHostName      = RETR_URL_STRING(HostName);
-	components.lpszUserName      = RETR_URL_STRING(UserName);
-	components.lpszPassword      = RETR_URL_STRING(Password);
-	components.lpszUrlPath       = RETR_URL_STRING(UrlPath);
-	components.lpszExtraInfo     = RETR_URL_STRING(ExtraInfo);
-	components.nPort             = m_uiPortNumber;
-
-	if(components.nPort == INTERNET_INVALID_PORT_NUMBER)
-	{
-		if(components.lpszScheme)
-		{
-			if(_wcsicmp(components.lpszScheme, L"http"  ) == 0) components.nPort = INTERNET_DEFAULT_HTTP_PORT;
-			if(_wcsicmp(components.lpszScheme, L"https" ) == 0) components.nPort = INTERNET_DEFAULT_HTTPS_PORT;
-			if(_wcsicmp(components.lpszScheme, L"ftp"   ) == 0) components.nPort = INTERNET_DEFAULT_FTP_PORT;
-			if(_wcsicmp(components.lpszScheme, L"gopher") == 0) components.nPort = INTERNET_DEFAULT_GOPHER_PORT;
-		}
-		else
-		{
-			components.nPort = INTERNET_DEFAULT_HTTP_PORT;
-		}
-	}
-
-	for(DWORD buffSize = 32; buffSize <= MAXWORD; buffSize *= 2)
-	{
-		DWORD len = buffSize;
-		len += components.dwSchemeLength;
-		len += components.dwHostNameLength;
-		len += components.dwUserNameLength;
-		len += components.dwPasswordLength;
-		len += components.dwUrlPathLength;
-		len += components.dwExtraInfoLength;
-
-		std::vector<wchar_t> temp(len, L'\0');
-		if(InternetCreateUrl(&components, 0, temp.data(), &len))
-		{
-			return std::wstring(temp.data(), len);
-		}
-
-		const DWORD err = GetLastError();
-		if(err != ERROR_INSUFFICIENT_BUFFER)
-		{
-			break; /*other error*/
-		}
-	}
-	
-	return std::wstring();
-}
-
 bool URL::isComplete(void) const
 {
-	if(m_strScheme  .empty()) return false;
-	if(m_strHostName.empty()) return false;
-	if(m_strUrlPath .empty()) return false;
-	return true;
+	if(m_strHostName.empty() || m_strUrlPath .empty())
+	{
+		return false;
+	}
+	return (m_iSchemeId > 0);
 }

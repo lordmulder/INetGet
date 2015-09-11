@@ -46,25 +46,28 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 	for(int i = 1; i < argc; i++)
 	{
 		const std::wstring current = trim(std::wstring(argv[i]));
-		if((!stopFlag) && (current.find(marker) == 0))
+		if(!current.empty())
 		{
-			if(current.length() > marker.length())
+			if((!stopFlag) && (current.find(marker) == 0))
 			{
-				if(!processOption(trim(current.substr(2, std::wstring::npos))))
+				if(current.length() > marker.length())
 				{
-					return false;
+					if(!processOption(trim(current.substr(2, std::wstring::npos))))
+					{
+						return false;
+					}
+				}
+				else
+				{
+					stopFlag = true;
 				}
 			}
 			else
 			{
-				stopFlag = true;
-			}
-		}
-		else
-		{
-			if(!processParamN(argCounter++, current))
-			{
-				return false;
+				if(!processParamN(argCounter++, current))
+				{
+					return false;
+				}
 			}
 		}
 	}
@@ -89,13 +92,19 @@ bool Params::processParamN(const size_t n, const std::wstring &param)
 		m_strOutput = param;
 		return true;
 	default:
-		std::wcerr << L"Error: Excess parameter \"" << param << L"\" detected!\n" << std::endl;
+		std::wcerr << L"Error: Excess parameter \"" << param << L"\" encountered!\n" << std::endl;
 		return false;
 	}
 }
 
 bool Params::processOption(const std::wstring &option)
 {
-	std::wcerr << L"Option: \"" << option << "\"\n" << std::endl;
-	return true;
+	if(!option.compare(L"help"))
+	{
+		m_bShowHelp = true;
+		return true;
+	}
+
+	std::wcerr << L"Error: Unknown option \"--" << option << "\" encountered\n" << std::endl;
+	return false;
 }

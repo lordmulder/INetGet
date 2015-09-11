@@ -25,6 +25,8 @@
 #include "Params.h"
 
 #include <Windows.h>
+#include <WinInet.h>
+
 #include <iostream>
 #include <stdexcept>
 #include <io.h>
@@ -55,6 +57,17 @@ static void printLogo(void)
 }
 
 //=============================================================================
+// HELP SCREEN
+//=============================================================================
+
+void print_help_screen(void)
+{
+	std::wcerr << L"Usage:" << std::endl;
+	std::wcerr << L"  INetGet.exe [options] <source_url> <output_file>" << std::endl;
+	std::wcerr << std::endl;
+}
+
+//=============================================================================
 // MAIN
 //=============================================================================
 
@@ -71,6 +84,36 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 		std::wcerr << "Invalid command-line arguments, type \"INetGet.exe --help\" for details!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	if(params.getShowHelp())
+	{
+		print_help_screen();
+		return EXIT_SUCCESS;
+	}
+
+	URL url(params.getSource());
+	if(!url.isComplete())
+	{
+		std::wcerr << "The URL is \"" << params.getSource() << "\" is incomplete or unsupported!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+	if((url.getScheme() != INTERNET_SCHEME_FTP) && (url.getScheme() != INTERNET_SCHEME_HTTP) && (url.getScheme() != INTERNET_SCHEME_HTTPS))
+	{
+		std::wcerr << "Specified protocol is unsupported! Only FTP, HTTP and HTTPS are allowed.\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+
+	const HINTERNET hInternet = InternetOpen(L"Mozilla/4.0 (compatible)", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+	if(hInternet == NULL)
+	{
+		std::wcerr << "FATAL ERROR: Failed to initialize WinInet API!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	std::wcerr << "Scheme: " << url.getScheme() << std::endl;
+
+	//InternetConnect(hInternet, url.getHostName().c_str(), url.getPort().c_str(), url.getUserName().c_str(), url.getPassword().c_str(), 
 
 	return EXIT_SUCCESS;
 }
