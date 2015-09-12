@@ -28,7 +28,9 @@
 class AbstractClient
 {
 public:
-	AbstractClient(void);
+	static const uint32_t SIZE_UNKNOWN = UINT32_MAX;
+
+	AbstractClient(const bool &verbose);
 	~AbstractClient(void);
 
 	bool client_init(const bool &disableProxy = false, const std::wstring &userAgent = std::wstring());
@@ -40,8 +42,15 @@ public:
 	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure) = 0;
 	virtual bool request_exit(void);
 
+	virtual bool query_result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type) = 0;
+
 protected:
 	bool connection_init(const uint32_t &serviceId, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
+
+	static void __stdcall callback_handler(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength);
+	virtual void update_status(const uint32_t &dwInternetStatus, const uint32_t &lpvStatusInformation);
+
+	const bool m_verbose;
 
 	void *m_hInternet;
 	void *m_hConnection;

@@ -86,20 +86,20 @@ static void print_help_screen(void)
 		<< L"Optional:\n"
 		<< L"  --no-proxy    : Don't use proxy server for address resolution\n"
 		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
+		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L"  --help        : Show this help screen\n"
 		<< std::endl;
 	std::wcout.flags(stateBackup);
 }
 
-static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id)
+static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const bool &verbose)
 {
 	switch(scheme_id)
 	{
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient());
+		client.reset(new HttpClient(verbose));
 		break;
-	case INTERNET_SCHEME_FTP:
 	default:
 		client.reset();
 		break;
@@ -144,9 +144,9 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 
 	//Create HTTP(S) or FTP client
 	std::unique_ptr<AbstractClient> client;
-	if(!create_client(client, url.getScheme()))
+	if(!create_client(client, url.getScheme(), params.getVerboseMode()))
 	{
-		std::wcerr << "Specified protocol is unsupported! Only FTP, HTTP and HTTPS currently allowed.\n" << std::endl;
+		std::wcerr << "Specified protocol is unsupported! Only HTTP and HTTPS are currently allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -164,12 +164,44 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 		return EXIT_FAILURE;
 	}
 
-	//Open the request
+	//Send the request
 	if(!client->request_init(L"GET", url.getUrlPath(), (url.getScheme() == INTERNET_SCHEME_HTTPS)))
 	{
-		std::wcerr << "ERROR: Failed to create request!\n" << std::endl;
+		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	//Query information
+	bool success;
+	uint32_t status_code, file_size;
+	std::wstring content_type;
+	if(!client->query_result(success, status_code, file_size, content_type))
+	{
+		std::wcerr << "ERROR: Failed to query request status!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Request successful?
+	if(!success)
+	{
+		std::wcerr << L"The request was reject by the server:\n";
+		std::wcerr << L"--> Status code: " << status_code << L'\n';
+		std::wcerr << "\nERROR: Server failed to process the given request!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Print some status information
+	std::wcerr << L"Connection sucessfully established:\n";
+	std::wcerr << L"--> Status code: " << status_code << L'\n';
+	if(!content_type.empty())
+	{
+		std::wcerr << L"--> Content type: " << content_type << L'\n';
+	}
+	if(file_size != AbstractClient::SIZE_UNKNOWN)
+	{
+		std::wcerr << L"--> File size: " << file_size << L" byte\n";
+	}
+	std::wcerr << std::endl;
 
 	return EXIT_SUCCESS;
 }

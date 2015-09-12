@@ -27,10 +27,11 @@
 class HttpClient : public AbstractClient
 {
 public:
-	HttpClient(void);
+	HttpClient(const bool &verbose);
 	~HttpClient(void);
 
 	virtual bool connection_init(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
 	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure);
+	virtual bool query_result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type);
 };
 

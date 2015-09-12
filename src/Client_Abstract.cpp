@@ -43,8 +43,9 @@ static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL 
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-AbstractClient::AbstractClient()
+AbstractClient::AbstractClient(const bool &verbose)
 :
+	m_verbose(verbose),
 	m_hInternet(NULL),
 	m_hConnection(NULL),
 	m_hRequest(NULL)
@@ -53,7 +54,6 @@ AbstractClient::AbstractClient()
 
 AbstractClient::~AbstractClient()
 {
-	connection_exit();
 	client_exit();
 }
 
@@ -69,7 +69,7 @@ bool AbstractClient::client_init(const bool &disableProxy, const std::wstring &u
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
-			std::wcerr << "InternetOpen() has failed: " << error_string(error_code) << L'\n' << std::endl;
+			std::wcerr << "InternetOpen() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
 		}
 	}
 
@@ -78,6 +78,10 @@ bool AbstractClient::client_init(const bool &disableProxy, const std::wstring &u
 
 bool AbstractClient::client_exit(void)
 {
+	//Close connection, just to be sure!
+	connection_exit();
+
+	//Close the client, if it is open
 	BOOL success = TRUE;
 	if(m_hInternet != NULL)
 	{
@@ -110,7 +114,17 @@ bool AbstractClient::connection_init(const uint32_t &serviceId, const std::wstri
 	if(m_hConnection == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "InternetConnect() has failed: " << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "InternetConnect() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+	}
+
+	//Install the callback handler (only in verbose mode)
+	if(m_verbose && (m_hConnection != NULL))
+	{
+		if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&callback_handler)) == INTERNET_INVALID_STATUS_CALLBACK)
+		{
+			const DWORD error_code = GetLastError();
+			std::wcerr << "InternetSetStatusCallback() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		}
 	}
 
 	return (m_hConnection != NULL);
@@ -118,6 +132,10 @@ bool AbstractClient::connection_init(const uint32_t &serviceId, const std::wstri
 
 bool AbstractClient::connection_exit(void)
 {
+	//Close request, just to be sure!
+	request_exit();
+
+	//Close connection, if it is open
 	BOOL success = TRUE;
 	if(m_hConnection != NULL)
 	{
@@ -133,6 +151,7 @@ bool AbstractClient::connection_exit(void)
 
 bool AbstractClient::request_exit(void)
 {
+	//Close request, if it is open
 	BOOL success = TRUE;
 	if(m_hRequest != NULL)
 	{
@@ -140,4 +159,62 @@ bool AbstractClient::request_exit(void)
 		m_hRequest = NULL;
 	}
 	return (success == TRUE);
+}
+
+//=============================================================================
+// STATUS CALLBACK
+//=============================================================================
+
+#define CHECK_STATUS(X) do \
+{ \
+	if(dwInternetStatus == X) \
+	{ \
+		static const char *name = #X; \
+		std::wcerr << L"--> Internet status: " << &name[16] << std::endl; \
+		return; \
+	} \
+} \
+while(0)
+
+void __stdcall AbstractClient::callback_handler(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength)
+{
+	if(AbstractClient *const instance = reinterpret_cast<AbstractClient*>(dwContext))
+	{
+		instance->update_status(dwInternetStatus, ((dwStatusInformationLength == sizeof(DWORD)) ? (*reinterpret_cast<DWORD*>(lpvStatusInformation)) : DWORD(-1)));
+	}
+}
+
+void AbstractClient::update_status(const uint32_t &dwInternetStatus, const uint32_t &lpvStatusInformation)
+{
+	CHECK_STATUS(INTERNET_STATUS_RESOLVING_NAME);
+	CHECK_STATUS(INTERNET_STATUS_NAME_RESOLVED);
+	CHECK_STATUS(INTERNET_STATUS_CONNECTING_TO_SERVER);
+	CHECK_STATUS(INTERNET_STATUS_CONNECTED_TO_SERVER);
+	CHECK_STATUS(INTERNET_STATUS_SENDING_REQUEST);
+	CHECK_STATUS(INTERNET_STATUS_REQUEST_SENT);
+	CHECK_STATUS(INTERNET_STATUS_RECEIVING_RESPONSE);
+	CHECK_STATUS(INTERNET_STATUS_RESPONSE_RECEIVED);
+	CHECK_STATUS(INTERNET_STATUS_CTL_RESPONSE_RECEIVED);
+	CHECK_STATUS(INTERNET_STATUS_PREFETCH);
+	CHECK_STATUS(INTERNET_STATUS_CLOSING_CONNECTION);
+	CHECK_STATUS(INTERNET_STATUS_CONNECTION_CLOSED);
+	CHECK_STATUS(INTERNET_STATUS_HANDLE_CREATED);
+	CHECK_STATUS(INTERNET_STATUS_HANDLE_CLOSING);
+	CHECK_STATUS(INTERNET_STATUS_DETECTING_PROXY);
+	CHECK_STATUS(INTERNET_STATUS_REQUEST_COMPLETE);
+	CHECK_STATUS(INTERNET_STATUS_REDIRECT);
+	CHECK_STATUS(INTERNET_STATUS_INTERMEDIATE_RESPONSE);
+	CHECK_STATUS(INTERNET_STATUS_USER_INPUT_REQUIRED);
+	CHECK_STATUS(INTERNET_STATUS_STATE_CHANGE);
+	CHECK_STATUS(INTERNET_STATUS_COOKIE_SENT);
+	CHECK_STATUS(INTERNET_STATUS_COOKIE_RECEIVED);
+	CHECK_STATUS(INTERNET_STATUS_PRIVACY_IMPACTED);
+	CHECK_STATUS(INTERNET_STATUS_P3P_HEADER);
+	CHECK_STATUS(INTERNET_STATUS_P3P_POLICYREF);
+	CHECK_STATUS(INTERNET_STATUS_COOKIE_HISTORY);
+	CHECK_STATUS(INTERNET_STATE_CONNECTED);
+	CHECK_STATUS(INTERNET_STATE_DISCONNECTED);
+	CHECK_STATUS(INTERNET_STATE_DISCONNECTED_BY_USER);
+	CHECK_STATUS(INTERNET_STATE_IDLE);
+	CHECK_STATUS(INTERNET_STATE_BUSY);
 }

@@ -42,10 +42,10 @@ static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL 
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-HttpClient::HttpClient(void)
+HttpClient::HttpClient(const bool &verbose)
+:
+	AbstractClient(verbose)
 {
-
-
 }
 
 HttpClient::~HttpClient(void)
@@ -86,28 +86,100 @@ bool HttpClient::request_init(const std::wstring &verb, const std::wstring &path
 		flags |= INTERNET_FLAG_SECURE;
 	}
 
-
 	//Try to create the HTTP request
 	m_hRequest = HttpOpenRequest(m_hConnection, CSTR(verb), CSTR(path), L"HTTP/1.1", NULL, NULL, flags, intptr_t(this));
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "HttpOpenRequest() has failed: " << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "HttpOpenRequest() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
 	}
 
 	//Try to actually send the HTTP request
 	if(m_hRequest != NULL)
 	{
+		std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection, please wait..." << std::endl;
 		BOOL success = HttpSendRequest(m_hRequest, NULL, 0, NULL, 0);
 		if(success != TRUE)
 		{
 			const DWORD error_code = GetLastError();
-			std::wcerr << "HttpOpenRequest() has failed: " << error_string(error_code) << L'\n' << std::endl;
+			std::wcerr << "Failed!\n\nHttpSendRequest() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+			return false;
 		}
-		return (success == TRUE);
+		
+		std::wcerr << "Successful.\n" << std::endl;
+		return true;
 	}
 
 	return false;
 }
 
-//
+//=============================================================================
+// QUERY STATUS
+//=============================================================================
+
+static bool get_header_int(void *const request, const DWORD type, uint32_t &value)
+{
+	DWORD result;
+	DWORD resultSize = sizeof(DWORD);
+
+	if(HttpQueryInfo(request, type | HTTP_QUERY_FLAG_NUMBER, &result, &resultSize, 0) == TRUE)
+	{
+		value = result;
+		return true;
+	}
+
+	const DWORD error_code = GetLastError();
+	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
+	{
+		std::wcerr << "HttpQueryInfo() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+	}
+
+	return false;
+}
+
+static bool get_header_str(void *const request, const DWORD type, std::wstring &value)
+{
+	static const size_t BUFF_SIZE = 2048;
+	wchar_t result[BUFF_SIZE];
+	DWORD resultSize = BUFF_SIZE * sizeof(wchar_t);
+
+	if(HttpQueryInfo(request, type, &result, &resultSize, 0) == TRUE)
+	{
+		value = std::wstring(result, resultSize / sizeof(wchar_t));
+		return true;
+	}
+
+	const DWORD error_code = GetLastError();
+	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
+	{
+		std::wcerr << "HttpQueryInfo() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+	}
+
+	return false;
+}
+
+bool HttpClient::query_result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type)
+{
+	if(m_hRequest == NULL)
+	{
+		throw std::runtime_error("Request not created yet!");
+	}
+
+	if(!get_header_int(m_hRequest, HTTP_QUERY_STATUS_CODE, status_code))
+	{
+		status_code = 0;
+	}
+
+	if(!get_header_int(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, file_size))
+	{
+		file_size = SIZE_UNKNOWN;
+	}
+
+	if(!get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE, content_type))
+	{
+		content_type.clear();
+	}
+
+	success = ((status_code >= 200) && (status_code < 300));
+	return (status_code > 0);
+}

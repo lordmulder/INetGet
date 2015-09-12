@@ -38,6 +38,7 @@ public:
 	inline const bool         &getShowHelp    (void) const { return m_bShowHelp;     }
 	inline const bool         &getDisableProxy(void) const { return m_bDisableProxy; }
 	inline const std::wstring &getUserAgent   (void) const { return m_strUserAgent;  }
+	inline const bool         &getVerboseMode (void) const { return m_bVerboseMode;  }
 
 private:
 	bool processParamN(const size_t n, const std::wstring &param);
@@ -49,5 +50,6 @@ private:
 	bool         m_bShowHelp;
 	bool         m_bDisableProxy;
 	std::wstring m_strUserAgent;
+	bool         m_bVerboseMode;
 };
 

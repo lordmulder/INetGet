@@ -62,7 +62,8 @@ while(0)
 Params::Params(void)
 :
 	m_bShowHelp(false),
-	m_bDisableProxy(false)
+	m_bDisableProxy(false),
+	m_bVerboseMode(false)
 {
 }
 
@@ -175,6 +176,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 		ENSURE_VALUE();
 		m_strUserAgent = option_val;
 		return true;
+	}
+	else if(IS_OPTION("verbose"))
+	{
+		ENSURE_NOVAL();
+		return (m_bVerboseMode = true);
 	}
 
 	std::wcerr << L"ERROR: Unknown option \"--" << option_key << "\" encountered!\n" << std::endl;
