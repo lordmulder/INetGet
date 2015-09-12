@@ -22,6 +22,17 @@
 
 #include "Utils.h"
 
+//CRT
+#include <sstream>
+
+//Win32
+#define WIN32_LEAN_AND_MEAN 1
+#include <Windows.h>
+
+//=============================================================================
+// TRIM STRING
+//=============================================================================
+
 static inline bool is_white_space(const wchar_t c)
 {
 	return iswspace(c) || iswcntrl(c);
@@ -66,4 +77,47 @@ static std::wstring &trim_l(std::wstring &str)
 std::wstring &trim(std::wstring &str)
 {
 	return trim_l(trim_r(str));
+}
+
+//=============================================================================
+// WIN32/WININET ERROR TO STRING
+//=============================================================================
+
+std::wstring error_string(const uint32_t &error_code)
+{
+	std::wstring result;
+	if(error_code)
+	{
+		DWORD formatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+		HMODULE hModule = NULL;
+		if((error_code >= 12000) && (error_code < 13000))
+		{
+			if(hModule = GetModuleHandle(L"wininet")) formatFlags |= FORMAT_MESSAGE_FROM_HMODULE;
+		}
+
+		LPVOID lpMsgBuf = NULL;
+		DWORD bufLen = FormatMessage(formatFlags, hModule, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &lpMsgBuf, 0, NULL );
+		if((bufLen > 0) && lpMsgBuf)
+		{
+			result = trim(std::wstring((LPTSTR)lpMsgBuf));
+			LocalFree(lpMsgBuf);
+		}
+	}
+
+	if(result.empty())
+	{
+		std::wostringstream str;
+		str << L"Unknown error (Code: " << error_code << L").";
+		result = str.str();
+	}
+	else
+	{
+		const wchar_t last = result[result.length()-1];
+		if((last != L'.') && (last != L'!') && (last != L'?') && (last != L',') && (last != L';'))
+		{
+			result += L'.';
+		}
+	}
+
+	return result;
 }

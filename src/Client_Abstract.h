@@ -25,7 +25,13 @@
 class AbstractClient
 {
 public:
-	AbstractClient();
-	~AbstractClient();
+	AbstractClient(void);
+	~AbstractClient(void);
+
+	bool init_client(void);
+	bool exit_client(void);
+
+protected:
+	void *m_hInternet;
 };
 

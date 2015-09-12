@@ -25,8 +25,10 @@
 #include "URL.h"
 #include "Utils.h"
 #include "Params.h"
+#include "Client_Abstract.h"
 
 //Win32
+#define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
 #include <WinInet.h>
 
@@ -96,7 +98,7 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	URL url(params.getSource());
 	if(!url.isComplete())
 	{
-		std::wcerr << "The URL is \"" << params.getSource() << "\" is incomplete or unsupported!\n" << std::endl;
+		std::wcerr << "The specified URL is incomplete or unsupported:\n" << params.getSource() << L'\n' << std::endl;
 		return EXIT_FAILURE;
 	}
 	if((url.getScheme() != INTERNET_SCHEME_FTP) && (url.getScheme() != INTERNET_SCHEME_HTTP) && (url.getScheme() != INTERNET_SCHEME_HTTPS))
@@ -105,17 +107,12 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 		return EXIT_FAILURE;
 	}
 
-
-	const HINTERNET hInternet = InternetOpen(L"Mozilla/4.0 (compatible)", INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-	if(hInternet == NULL)
+	AbstractClient client;
+	if(!client.init_client())
 	{
 		std::wcerr << "FATAL ERROR: Failed to initialize WinInet API!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
-
-	std::wcerr << "Scheme: " << url.getScheme() << std::endl;
-
-	//InternetConnect(hInternet, url.getHostName().c_str(), url.getPort().c_str(), url.getUserName().c_str(), url.getPassword().c_str(), 
 
 	return EXIT_SUCCESS;
 }

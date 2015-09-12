@@ -23,5 +23,7 @@
 #pragma once
 
 #include <string>
+#include <stdint.h>
 
 std::wstring &trim(std::wstring &str);
+std::wstring error_string(const uint32_t &error_code);

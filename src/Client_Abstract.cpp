@@ -22,10 +22,60 @@
 
 #include "Client_Abstract.h"
 
+//Internal
+#include "Utils.h"
+
+//Win32
+#define WIN32_LEAN_AND_MEAN 1
+#include <Windows.h>
+#include <WinInet.h>
+
+//CRT
+#include <iostream>
+
+//Agent String
+static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0";
+
+//=============================================================================
+// CONSTRUCTOR / DESTRUCTOR
+//=============================================================================
+
 AbstractClient::AbstractClient()
+:
+	m_hInternet(NULL)
 {
 }
 
 AbstractClient::~AbstractClient()
 {
+	exit_client();
+}
+
+//=============================================================================
+// INITIALIZE OR EXIT CLIENT
+//=============================================================================
+
+bool AbstractClient::init_client(void)
+{
+	if(m_hInternet == NULL)
+	{
+		m_hInternet = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+		if(m_hInternet == NULL)
+		{
+			const DWORD error_code = GetLastError();
+			std::wcerr << "InternetOpen() has failed: " << error_string(error_code) << L'\n' << std::endl;
+		}
+	}
+	return (m_hInternet != NULL);
+}
+
+bool AbstractClient::exit_client(void)
+{
+	BOOL success = TRUE;
+	if(m_hInternet != NULL)
+	{
+		BOOL success = InternetCloseHandle(m_hInternet);
+		m_hInternet = NULL;
+	}
+	return (success == TRUE);
 }
