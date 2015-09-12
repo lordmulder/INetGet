@@ -25,7 +25,7 @@
 #include "URL.h"
 #include "Utils.h"
 #include "Params.h"
-#include "Client_Abstract.h"
+#include "Client_HTTP.h"
 
 //Win32
 #define WIN32_LEAN_AND_MEAN 1
@@ -95,11 +95,11 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 {
 	switch(scheme_id)
 	{
-	case INTERNET_SCHEME_FTP:
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new AbstractClient());
+		client.reset(new HttpClient());
 		break;
+	case INTERNET_SCHEME_FTP:
 	default:
 		client.reset();
 		break;
@@ -151,9 +151,23 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Initialize the client
-	if(!client->init_client(params.getDisableProxy(), params.getUserAgent()))
+	if(!client->client_init(params.getDisableProxy(), params.getUserAgent()))
 	{
 		std::wcerr << "FATAL ERROR: The WinInet API could not be initialized!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Open the connection
+	if(!client->connection_init(url.getHostName(), url.getPort(), url.getUserName(), url.getPassword()))
+	{
+		std::wcerr << "Failed to connect to the specified host:\n" << url.getHostName() << L':' << url.getPort() << L'\n' << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Open the request
+	if(!client->request_init(L"GET", url.getUrlPath(), (url.getScheme() == INTERNET_SCHEME_HTTPS)))
+	{
+		std::wcerr << "ERROR: Failed to create request!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 

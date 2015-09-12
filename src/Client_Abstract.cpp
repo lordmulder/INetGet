@@ -36,26 +36,32 @@
 //Default User Agent string
 static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0"; /*use something unobtrusive*/
 
+//Helper macro
+static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
+
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
 AbstractClient::AbstractClient()
 :
-	m_hInternet(NULL)
+	m_hInternet(NULL),
+	m_hConnection(NULL),
+	m_hRequest(NULL)
 {
 }
 
 AbstractClient::~AbstractClient()
 {
-	exit_client();
+	connection_exit();
+	client_exit();
 }
 
 //=============================================================================
 // INITIALIZE OR EXIT CLIENT
 //=============================================================================
 
-bool AbstractClient::init_client(const bool &disableProxy, const std::wstring &userAgent)
+bool AbstractClient::client_init(const bool &disableProxy, const std::wstring &userAgent)
 {
 	if(m_hInternet == NULL)
 	{
@@ -66,16 +72,72 @@ bool AbstractClient::init_client(const bool &disableProxy, const std::wstring &u
 			std::wcerr << "InternetOpen() has failed: " << error_string(error_code) << L'\n' << std::endl;
 		}
 	}
+
 	return (m_hInternet != NULL);
 }
 
-bool AbstractClient::exit_client(void)
+bool AbstractClient::client_exit(void)
 {
 	BOOL success = TRUE;
 	if(m_hInternet != NULL)
 	{
 		BOOL success = InternetCloseHandle(m_hInternet);
 		m_hInternet = NULL;
+	}
+	return (success == TRUE);
+}
+
+//=============================================================================
+// CONNECTION HANDLING
+//=============================================================================
+
+bool AbstractClient::connection_init(const uint32_t &serviceId, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password)
+{
+	if(m_hInternet == NULL)
+	{
+		throw std::runtime_error("WinInet API not initialized yet!");
+	}
+
+	//Close existing connection, just to be sure
+	if(!connection_exit())
+	{
+		std::wcerr << "ERROR: Failed to close the existing connection!\n" << std::endl;
+		return false;
+	}
+
+	//Try to open the new connection
+	m_hConnection = InternetConnect(m_hInternet, CSTR(hostName), portNo, CSTR(userName), CSTR(password), serviceId, 0, reinterpret_cast<intptr_t>(this));
+	if(m_hConnection == NULL)
+	{
+		const DWORD error_code = GetLastError();
+		std::wcerr << "InternetConnect() has failed: " << error_string(error_code) << L'\n' << std::endl;
+	}
+
+	return (m_hConnection != NULL);
+}
+
+bool AbstractClient::connection_exit(void)
+{
+	BOOL success = TRUE;
+	if(m_hConnection != NULL)
+	{
+		BOOL success = InternetCloseHandle(m_hConnection);
+		m_hConnection = NULL;
+	}
+	return (success == TRUE);
+}
+
+//=============================================================================
+// REQUEST HANDLING
+//=============================================================================
+
+bool AbstractClient::request_exit(void)
+{
+	BOOL success = TRUE;
+	if(m_hRequest != NULL)
+	{
+		BOOL success = InternetCloseHandle(m_hRequest);
+		m_hRequest = NULL;
 	}
 	return (success == TRUE);
 }

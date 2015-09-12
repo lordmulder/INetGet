@@ -30,6 +30,9 @@
     <ClCompile Include="src\Client_Abstract.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Client_HTTP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\URL.h">
@@ -41,10 +44,13 @@
     <ClInclude Include="src\Params.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Version.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\Client_Abstract.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Version.h">
+    <ClInclude Include="src\Client_HTTP.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

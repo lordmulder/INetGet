@@ -22,28 +22,15 @@
 
 #pragma once
 
-#include <stdint.h>
-#include <string>
+#include "Client_Abstract.h"
 
-class AbstractClient
+class HttpClient : public AbstractClient
 {
 public:
-	AbstractClient(void);
-	~AbstractClient(void);
+	HttpClient(void);
+	~HttpClient(void);
 
-	bool client_init(const bool &disableProxy = false, const std::wstring &userAgent = std::wstring());
-	bool client_exit(void);
-
-	virtual bool connection_init(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &useName, const std::wstring &password) = 0;
-	virtual bool connection_exit(void);
-
-	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure) = 0;
-	virtual bool request_exit(void);
-
-protected:
-	bool connection_init(const uint32_t &serviceId, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
-
-	void *m_hInternet;
-	void *m_hConnection;
-	void *m_hRequest;
+	virtual bool connection_init(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
+	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure);
 };
+

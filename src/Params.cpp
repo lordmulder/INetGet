@@ -49,7 +49,7 @@ while(0)
 { \
 	if(!option_val.empty()) \
 	{ \
-		std::wcerr << L"ERROR: Excess argument for option \"--" << option_key << "\" encountered!\n" << std::endl; \
+		std::wcerr << L"ERROR: Excess argument \"" << option_val << "\" for option \"--" << option_key << "\" encountered!\n" << std::endl; \
 		return false; \
 	} \
 } \

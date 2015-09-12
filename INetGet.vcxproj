@@ -12,6 +12,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Client_Abstract.cpp" />
+    <ClCompile Include="src\Client_HTTP.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Params.cpp" />
     <ClCompile Include="src\URL.cpp" />
@@ -19,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Client_Abstract.h" />
+    <ClInclude Include="src\Client_HTTP.h" />
     <ClInclude Include="src\Params.h" />
     <ClInclude Include="src\URL.h" />
     <ClInclude Include="src\Utils.h" />
