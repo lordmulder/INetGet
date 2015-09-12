@@ -11,15 +11,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Client_Abstract.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Params.cpp" />
     <ClCompile Include="src\URL.cpp" />
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Client_Abstract.h" />
     <ClInclude Include="src\Params.h" />
     <ClInclude Include="src\URL.h" />
     <ClInclude Include="src\Utils.h" />
+    <ClInclude Include="src\Version.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{157E1DB2-A934-4AB6-99CF-626AADB42F79}</ProjectGuid>

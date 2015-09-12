@@ -20,14 +20,19 @@
 // http://www.gnu.org/licenses/gpl-2.0.txt
 ///////////////////////////////////////////////////////////////////////////////
 
+//Internal
+#include "Version.h"
 #include "URL.h"
 #include "Utils.h"
 #include "Params.h"
 
+//Win32
 #include <Windows.h>
 #include <WinInet.h>
 
+//CRT
 #include <iostream>
+#include <iomanip>
 #include <stdexcept>
 #include <io.h>
 #include <fcntl.h>
@@ -40,20 +45,15 @@
 // INTERNAL FUNCTIONS
 //=============================================================================
 
-static const char *BUILD_DATE = __DATE__;
-static const char *BUILD_TIME = __TIME__;
-
-#ifdef _M_X64
-static const char *BUILD_ARCH = "x64";
-#else
-static const char *BUILD_ARCH = "x86";
-#endif
-
 static void printLogo(void)
 {
-	std::wcerr << L"\nINetGet - Lightweight command-line front-end to WinInet API" << std::endl;
-	std::wcerr << L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved." << std::endl;
-	std::wcerr << L"Built on " << BUILD_DATE << " at " << BUILD_TIME << " with Visual C++ v" << _MSC_VER << " (" << BUILD_ARCH << ")\n" << std::endl;
+	const std::ios::fmtflags stateBackup(std::wcout.flags());
+	std::wcerr << L"\nINetGet v"
+		<< std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR << L'_' << std::setw(0) << VER_INETGET_PATCH
+		<< " - Lightweight command-line front-end to WinInet\n"
+		<< L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved.\n"
+		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << " with " << BUILD_COMP << " (" << BUILD_ARCH << ")\n" << std::endl;
+	std::wcout.flags(stateBackup);
 }
 
 //=============================================================================
@@ -62,9 +62,11 @@ static void printLogo(void)
 
 void print_help_screen(void)
 {
-	std::wcerr << L"Usage:" << std::endl;
-	std::wcerr << L"  INetGet.exe [options] <source_url> <output_file>" << std::endl;
-	std::wcerr << std::endl;
+	const std::ios::fmtflags stateBackup(std::wcout.flags());
+	std::wcerr << L"Usage:\n"
+		<< L"  INetGet.exe [options] <source_url> <output_file>\n"
+		<< std::endl;
+	std::wcout.flags(stateBackup);
 }
 
 //=============================================================================
