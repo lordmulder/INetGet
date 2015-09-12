@@ -22,13 +22,15 @@
 
 #pragma once
 
+#include <string>
+
 class AbstractClient
 {
 public:
 	AbstractClient(void);
 	~AbstractClient(void);
 
-	bool init_client(void);
+	bool init_client(const bool &disableProxy = false, const std::wstring &userAgent = std::wstring());
 	bool exit_client(void);
 
 protected:

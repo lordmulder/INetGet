@@ -33,11 +33,14 @@
 #include <WinInet.h>
 
 //CRT
+#include <stdint.h>
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
 #include <io.h>
 #include <fcntl.h>
+#include <memory>
+#include <sstream>
 
 #if (defined(NDEBUG) && defined(_DEBUG)) || ((!defined(NDEBUG)) && (!defined(_DEBUG)))
 #error Inconsistent DEBUG flags!
@@ -47,28 +50,62 @@
 // INTERNAL FUNCTIONS
 //=============================================================================
 
-static void printLogo(void)
+static std::wstring build_version_string(void)
+{
+	std::wostringstream str;
+	if(VER_INETGET_PATCH > 0)
+	{
+		str << std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR << L'_' << std::setw(0) << VER_INETGET_PATCH;
+	}
+	else
+	{
+		str << std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR;
+	}
+	return str.str();
+}
+
+static void print_logo(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr << L"\nINetGet v"
-		<< std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR << L'_' << std::setw(0) << VER_INETGET_PATCH
-		<< " - Lightweight command-line front-end to WinInet\n"
+	std::wcerr << L"\nINetGet v" << build_version_string() << " - Lightweight command-line front-end to WinInet\n"
 		<< L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved.\n"
 		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << " with " << BUILD_COMP << " (" << BUILD_ARCH << ")\n" << std::endl;
 	std::wcout.flags(stateBackup);
 }
 
-//=============================================================================
-// HELP SCREEN
-//=============================================================================
-
-void print_help_screen(void)
+static void print_help_screen(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
 	std::wcerr << L"Usage:\n"
-		<< L"  INetGet.exe [options] <source_url> <output_file>\n"
+		<< L"  INetGet.exe [options] <source_addr> <output_file>\n"
+		<< L'\n'
+		<< L"Required:\n"
+		<< L"  <source_addr> : Specifies the source internet address (URL)\n"
+		<< L"  <output_file> : Specifies the output file, you can specify \"-\" for STDOUT\n"
+		<< L'\n'
+		<< L"Optional:\n"
+		<< L"  --no-proxy    : Don't use proxy server for address resolution\n"
+		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
+		<< L"  --help        : Show this help screen\n"
 		<< std::endl;
 	std::wcout.flags(stateBackup);
+}
+
+static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id)
+{
+	switch(scheme_id)
+	{
+	case INTERNET_SCHEME_FTP:
+	case INTERNET_SCHEME_HTTP:
+	case INTERNET_SCHEME_HTTPS:
+		client.reset(new AbstractClient());
+		break;
+	default:
+		client.reset();
+		break;
+	}
+
+	return !!client;
 }
 
 //=============================================================================
@@ -80,8 +117,9 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 
-	printLogo();
+	print_logo();
 
+	//Parse command-line parameters
 	Params params;
 	if(!params.initialize(argc, argv))
 	{
@@ -89,28 +127,33 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 		return EXIT_FAILURE;
 	}
 
+	//Show help screen, if it was requested
 	if(params.getShowHelp())
 	{
 		print_help_screen();
 		return EXIT_SUCCESS;
 	}
 
+	//Parse the specified source URL
 	URL url(params.getSource());
 	if(!url.isComplete())
 	{
 		std::wcerr << "The specified URL is incomplete or unsupported:\n" << params.getSource() << L'\n' << std::endl;
 		return EXIT_FAILURE;
 	}
-	if((url.getScheme() != INTERNET_SCHEME_FTP) && (url.getScheme() != INTERNET_SCHEME_HTTP) && (url.getScheme() != INTERNET_SCHEME_HTTPS))
+
+	//Create HTTP(S) or FTP client
+	std::unique_ptr<AbstractClient> client;
+	if(!create_client(client, url.getScheme()))
 	{
-		std::wcerr << "Specified protocol is unsupported! Only FTP, HTTP and HTTPS are allowed.\n" << std::endl;
+		std::wcerr << "Specified protocol is unsupported! Only FTP, HTTP and HTTPS currently allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	AbstractClient client;
-	if(!client.init_client())
+	//Initialize the client
+	if(!client->init_client(params.getDisableProxy(), params.getUserAgent()))
 	{
-		std::wcerr << "FATAL ERROR: Failed to initialize WinInet API!\n" << std::endl;
+		std::wcerr << "FATAL ERROR: The WinInet API could not be initialized!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 

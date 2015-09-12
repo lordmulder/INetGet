@@ -22,19 +22,57 @@
 
 #include "Params.h"
 
+//Internal
+#include "Utils.h"
+
+//CRT
 #include <stdexcept>
 #include <iostream>
 
-#include "Utils.h"
+//=============================================================================
+// UTILITIES
+//=============================================================================
+
+#define IS_OPTION(X) (option_key.compare(L##X) == 0)
+
+#define ENSURE_VALUE() do \
+{ \
+	if(option_val.empty()) \
+	{ \
+		std::wcerr << L"ERROR: Required argument for option \"--" << option_key << "\" is missing!\n" << std::endl; \
+		return false; \
+	} \
+} \
+while(0)
+
+#define ENSURE_NOVAL() do \
+{ \
+	if(!option_val.empty()) \
+	{ \
+		std::wcerr << L"ERROR: Excess argument for option \"--" << option_key << "\" encountered!\n" << std::endl; \
+		return false; \
+	} \
+} \
+while(0)
+
+//=============================================================================
+// CONSTRUCTOR / DESTRUCTOR
+//=============================================================================
 
 Params::Params(void)
+:
+	m_bShowHelp(false),
+	m_bDisableProxy(false)
 {
-	m_bShowHelp = false;
 }
 
 Params::~Params()
 {
 }
+
+//=============================================================================
+// PARSE PARAMETERS
+//=============================================================================
 
 bool Params::initialize(const int argc, const wchar_t *const argv[])
 {
@@ -64,7 +102,7 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 			}
 			else
 			{
-				if(!processParamN(argCounter++, current))
+				if(!(stopFlag = processParamN(argCounter++, current)))
 				{
 					return false;
 				}
@@ -74,7 +112,7 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 
 	if(!(m_bShowHelp || (argCounter >= 2)))
 	{
-		std::wcerr << L"Error: Required parameter is missing!\n" << std::endl;
+		std::wcerr << L"ERROR: Required parameter is missing!\n" << std::endl;
 		return false;
 	}
 
@@ -92,19 +130,53 @@ bool Params::processParamN(const size_t n, const std::wstring &param)
 		m_strOutput = param;
 		return true;
 	default:
-		std::wcerr << L"Error: Excess parameter \"" << param << L"\" encountered!\n" << std::endl;
+		std::wcerr << L"ERROR: Excess parameter \"" << param << L"\" encountered!\n" << std::endl;
 		return false;
 	}
 }
 
 bool Params::processOption(const std::wstring &option)
 {
-	if(!option.compare(L"help"))
+	std::wstring option_key, option_val;
+
+	const size_t delim_pos = option.find_first_of(L'=');
+	if(delim_pos != std::wstring::npos)
 	{
-		m_bShowHelp = true;
+		if((delim_pos == 0) || (delim_pos >= option.length() - 1))
+		{
+			std::wcerr << L"ERROR: Format of option \"--" << option << "\" is invalid!\n" << std::endl;
+			return false;
+		}
+		option_key = option.substr(0, delim_pos);
+		option_val = option.substr(delim_pos + 1, std::wstring::npos);
+	}
+	else
+	{
+		option_key = option;
+	}
+
+	return processOption(option_key, option_val);
+}
+
+bool Params::processOption(const std::wstring &option_key, const std::wstring &option_val)
+{
+	if(IS_OPTION("help"))
+	{
+		ENSURE_NOVAL();
+		return (m_bShowHelp = true);
+	}
+	else if(IS_OPTION("no-proxy"))
+	{
+		ENSURE_NOVAL();
+		return (m_bDisableProxy = true);
+	}
+	else if(IS_OPTION("agent"))
+	{
+		ENSURE_VALUE();
+		m_strUserAgent = option_val;
 		return true;
 	}
 
-	std::wcerr << L"Error: Unknown option \"--" << option << "\" encountered\n" << std::endl;
+	std::wcerr << L"ERROR: Unknown option \"--" << option_key << "\" encountered!\n" << std::endl;
 	return false;
 }

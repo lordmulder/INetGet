@@ -33,8 +33,8 @@
 //CRT
 #include <iostream>
 
-//Agent String
-static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0";
+//Default User Agent string
+static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0"; /*use something unobtrusive*/
 
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
@@ -55,11 +55,11 @@ AbstractClient::~AbstractClient()
 // INITIALIZE OR EXIT CLIENT
 //=============================================================================
 
-bool AbstractClient::init_client(void)
+bool AbstractClient::init_client(const bool &disableProxy, const std::wstring &userAgent)
 {
 	if(m_hInternet == NULL)
 	{
-		m_hInternet = InternetOpen(USER_AGENT, INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+		m_hInternet = InternetOpen(userAgent.empty() ? USER_AGENT : userAgent.c_str(), disableProxy ? INTERNET_OPEN_TYPE_DIRECT : INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();

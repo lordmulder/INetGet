@@ -33,17 +33,21 @@ public:
 	bool initialize(const int argc, const wchar_t *const argv[]);
 
 	//Getter
-	inline const std::wstring &getSource(  void) const { return m_strSource; }
-	inline const std::wstring &getOutput  (void) const { return m_strOutput; }
-	inline const bool         &getShowHelp(void) const { return m_bShowHelp; }
+	inline const std::wstring &getSource      (void) const { return m_strSource;     }
+	inline const std::wstring &getOutput      (void) const { return m_strOutput;     }
+	inline const bool         &getShowHelp    (void) const { return m_bShowHelp;     }
+	inline const bool         &getDisableProxy(void) const { return m_bDisableProxy; }
+	inline const std::wstring &getUserAgent   (void) const { return m_strUserAgent;  }
 
 private:
 	bool processParamN(const size_t n, const std::wstring &param);
 	bool processOption(const std::wstring &option);
+	bool processOption(const std::wstring &option_key, const std::wstring &option_val);
 
 	std::wstring m_strSource;
 	std::wstring m_strOutput;
-
-	bool m_bShowHelp;
+	bool         m_bShowHelp;
+	bool         m_bDisableProxy;
+	std::wstring m_strUserAgent;
 };
 
