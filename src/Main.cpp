@@ -46,6 +46,8 @@
 #error Inconsistent DEBUG flags!
 #endif
 
+#define IS_HTTPS(URL) ((URL).getScheme() == INTERNET_SCHEME_HTTPS)
+
 //=============================================================================
 // INTERNAL FUNCTIONS
 //=============================================================================
@@ -92,13 +94,13 @@ static void print_help_screen(void)
 	std::wcout.flags(stateBackup);
 }
 
-static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const bool &verbose)
+static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const bool &disableProxy, const std::wstring userAgentStr, const bool &verbose)
 {
 	switch(scheme_id)
 	{
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(verbose));
+		client.reset(new HttpClient(disableProxy, userAgentStr, verbose));
 		break;
 	default:
 		client.reset();
@@ -106,6 +108,87 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 	}
 
 	return !!client;
+}
+
+static void print_response_info(const uint32_t &status_code, const uint32_t &file_size,	const std::wstring &content_type)
+{
+	//Status code
+	std::wcerr << L"--> Status code: " << status_code << " [";
+	bool status_found = false;
+	for(size_t i = 0; STATUS_CODES[i].info; i++)
+	{
+		if(STATUS_CODES[i].code == status_code)
+		{
+			status_found = true;
+			std::wcerr << STATUS_CODES[i].info << "]\n";
+			break;
+		}
+	}
+	if(!status_found)
+	{
+		std::wcerr << "Unknown]\n";
+	}
+
+	//Content type
+	std::wcerr << L"--> Content type: ";
+	if(!content_type.empty())
+	{
+		std::wcerr << content_type << L'\n';
+	}
+	else
+	{
+		std::wcerr << L"(unspecified)\n";
+	}
+
+	//File size
+	std::wcerr << L"--> File size: ";
+	if(file_size != AbstractClient::SIZE_UNKNOWN)
+	{
+		 std::wcerr << file_size << L" byte\n";
+	}
+	else
+	{
+		std::wcerr << L"(unspecified)\n";
+	}
+
+	std::wcerr << std::endl;
+}
+
+//=============================================================================
+// PROCESS
+//=============================================================================
+
+static int retrieve_url(AbstractClient *const client, const URL &url)
+{
+	//Create the HTTPS connection/request
+	if(!client->open(HTTP_GET, IS_HTTPS(url), url.getHostName(), url.getPort(), url.getUserName(), url.getPassword(), url.getUrlPath()))
+	{
+		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Query result information
+	uint32_t status_code, file_size;
+	bool success;
+	std::wstring content_type;
+	if(!client->result(success, status_code, file_size, content_type))
+	{
+		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Print some status information
+	std::wcerr << L"HTTP request sent, awaiting response:\n";
+	print_response_info(status_code, file_size, content_type);
+
+	//Request successful?
+	if(!success)
+	{
+		std::wcerr << "ERROR: The server failed to handle this request! [Status " << status_code << "]\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
 }
 
 //=============================================================================
@@ -117,6 +200,8 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 
+
+	//Print application info
 	print_logo();
 
 	//Parse command-line parameters
@@ -142,68 +227,19 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 		return EXIT_FAILURE;
 	}
 
-	//Create HTTP(S) or FTP client
+	//Print request URL
+	std::wcerr << L"Request UR:\n" << params.getSource() << L'\n' << std::endl;
+
+	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;
-	if(!create_client(client, url.getScheme(), params.getVerboseMode()))
+	if(!create_client(client, url.getScheme(), params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()))
 	{
 		std::wcerr << "Specified protocol is unsupported! Only HTTP and HTTPS are currently allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	//Initialize the client
-	if(!client->client_init(params.getDisableProxy(), params.getUserAgent()))
-	{
-		std::wcerr << "FATAL ERROR: The WinInet API could not be initialized!\n" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//Open the connection
-	if(!client->connection_init(url.getHostName(), url.getPort(), url.getUserName(), url.getPassword()))
-	{
-		std::wcerr << "Failed to connect to the specified host:\n" << url.getHostName() << L':' << url.getPort() << L'\n' << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//Send the request
-	if(!client->request_init(L"GET", url.getUrlPath(), (url.getScheme() == INTERNET_SCHEME_HTTPS)))
-	{
-		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//Query information
-	bool success;
-	uint32_t status_code, file_size;
-	std::wstring content_type;
-	if(!client->query_result(success, status_code, file_size, content_type))
-	{
-		std::wcerr << "ERROR: Failed to query request status!\n" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//Request successful?
-	if(!success)
-	{
-		std::wcerr << L"The request was reject by the server:\n";
-		std::wcerr << L"--> Status code: " << status_code << L'\n';
-		std::wcerr << "\nERROR: Server failed to process the given request!\n" << std::endl;
-		return EXIT_FAILURE;
-	}
-
-	//Print some status information
-	std::wcerr << L"Connection sucessfully established:\n";
-	std::wcerr << L"--> Status code: " << status_code << L'\n';
-	if(!content_type.empty())
-	{
-		std::wcerr << L"--> Content type: " << content_type << L'\n';
-	}
-	if(file_size != AbstractClient::SIZE_UNKNOWN)
-	{
-		std::wcerr << L"--> File size: " << file_size << L" byte\n";
-	}
-	std::wcerr << std::endl;
-
-	return EXIT_SUCCESS;
+	//Retrieve the URL
+	return retrieve_url(client.get(), url);
 }
 
 //=============================================================================

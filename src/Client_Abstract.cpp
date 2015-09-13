@@ -43,29 +43,29 @@ static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL 
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-AbstractClient::AbstractClient(const bool &verbose)
+AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &verbose)
 :
+	m_disableProxy(disableProxy),
+	m_userAgentStr(userAgentStr),
 	m_verbose(verbose),
-	m_hInternet(NULL),
-	m_hConnection(NULL),
-	m_hRequest(NULL)
+	m_hInternet(NULL)
 {
 }
 
 AbstractClient::~AbstractClient()
 {
-	client_exit();
+	wininet_exit();
 }
 
 //=============================================================================
 // INITIALIZE OR EXIT CLIENT
 //=============================================================================
 
-bool AbstractClient::client_init(const bool &disableProxy, const std::wstring &userAgent)
+bool AbstractClient::wininet_init()
 {
 	if(m_hInternet == NULL)
 	{
-		m_hInternet = InternetOpen(userAgent.empty() ? USER_AGENT : userAgent.c_str(), disableProxy ? INTERNET_OPEN_TYPE_DIRECT : INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+		m_hInternet = InternetOpen(m_userAgentStr.empty() ? USER_AGENT : m_userAgentStr.c_str(), m_disableProxy ? INTERNET_OPEN_TYPE_DIRECT : INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
@@ -76,89 +76,9 @@ bool AbstractClient::client_init(const bool &disableProxy, const std::wstring &u
 	return (m_hInternet != NULL);
 }
 
-bool AbstractClient::client_exit(void)
+bool AbstractClient::wininet_exit(void)
 {
-	//Close connection, just to be sure!
-	connection_exit();
-
-	//Close the client, if it is open
-	BOOL success = TRUE;
-	if(m_hInternet != NULL)
-	{
-		BOOL success = InternetCloseHandle(m_hInternet);
-		m_hInternet = NULL;
-	}
-	return (success == TRUE);
-}
-
-//=============================================================================
-// CONNECTION HANDLING
-//=============================================================================
-
-bool AbstractClient::connection_init(const uint32_t &serviceId, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password)
-{
-	if(m_hInternet == NULL)
-	{
-		throw std::runtime_error("WinInet API not initialized yet!");
-	}
-
-	//Close existing connection, just to be sure
-	if(!connection_exit())
-	{
-		std::wcerr << "ERROR: Failed to close the existing connection!\n" << std::endl;
-		return false;
-	}
-
-	//Try to open the new connection
-	m_hConnection = InternetConnect(m_hInternet, CSTR(hostName), portNo, CSTR(userName), CSTR(password), serviceId, 0, reinterpret_cast<intptr_t>(this));
-	if(m_hConnection == NULL)
-	{
-		const DWORD error_code = GetLastError();
-		std::wcerr << "InternetConnect() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
-	}
-
-	//Install the callback handler (only in verbose mode)
-	if(m_verbose && (m_hConnection != NULL))
-	{
-		if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&callback_handler)) == INTERNET_INVALID_STATUS_CALLBACK)
-		{
-			const DWORD error_code = GetLastError();
-			std::wcerr << "InternetSetStatusCallback() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
-		}
-	}
-
-	return (m_hConnection != NULL);
-}
-
-bool AbstractClient::connection_exit(void)
-{
-	//Close request, just to be sure!
-	request_exit();
-
-	//Close connection, if it is open
-	BOOL success = TRUE;
-	if(m_hConnection != NULL)
-	{
-		BOOL success = InternetCloseHandle(m_hConnection);
-		m_hConnection = NULL;
-	}
-	return (success == TRUE);
-}
-
-//=============================================================================
-// REQUEST HANDLING
-//=============================================================================
-
-bool AbstractClient::request_exit(void)
-{
-	//Close request, if it is open
-	BOOL success = TRUE;
-	if(m_hRequest != NULL)
-	{
-		BOOL success = InternetCloseHandle(m_hRequest);
-		m_hRequest = NULL;
-	}
-	return (success == TRUE);
+	return close_handle(m_hInternet);
 }
 
 //=============================================================================
@@ -170,7 +90,7 @@ bool AbstractClient::request_exit(void)
 	if(dwInternetStatus == X) \
 	{ \
 		static const char *name = #X; \
-		std::wcerr << L"--> Internet status: " << &name[16] << std::endl; \
+		std::wcerr << L"--> " << &name[16] << std::endl; \
 		return; \
 	} \
 } \
@@ -217,4 +137,24 @@ void AbstractClient::update_status(const uint32_t &dwInternetStatus, const uint3
 	CHECK_STATUS(INTERNET_STATE_DISCONNECTED_BY_USER);
 	CHECK_STATUS(INTERNET_STATE_IDLE);
 	CHECK_STATUS(INTERNET_STATE_BUSY);
+}
+
+//=============================================================================
+// UTILITIES
+//=============================================================================
+
+bool AbstractClient::close_handle(void *&handle)
+{
+	bool success = true;
+
+	if(handle != NULL)
+	{
+		if(InternetCloseHandle(handle) != TRUE)
+		{
+			success = false;
+		}
+		handle = NULL;
+	}
+
+	return success;
 }

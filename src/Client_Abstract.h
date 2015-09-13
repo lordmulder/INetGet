@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "Types.h"
+
 #include <stdint.h>
 #include <string>
 
@@ -30,29 +32,33 @@ class AbstractClient
 public:
 	static const uint32_t SIZE_UNKNOWN = UINT32_MAX;
 
-	AbstractClient(const bool &verbose);
+	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
 	~AbstractClient(void);
 
-	bool client_init(const bool &disableProxy = false, const std::wstring &userAgent = std::wstring());
-	bool client_exit(void);
+	//Connection handling
+	virtual bool open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path) = 0;
+	virtual bool close(void) = 0;
 
-	virtual bool connection_init(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &useName, const std::wstring &password) = 0;
-	virtual bool connection_exit(void);
-
-	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure) = 0;
-	virtual bool request_exit(void);
-
-	virtual bool query_result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type) = 0;
+	//Fetch result
+	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type) = 0;
 
 protected:
-	bool connection_init(const uint32_t &serviceId, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
+	//WinInet initialization
+	bool wininet_init(void);
+	bool wininet_exit(void);
 
+	//Status callback
 	static void __stdcall callback_handler(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength);
 	virtual void update_status(const uint32_t &dwInternetStatus, const uint32_t &lpvStatusInformation);
 
+	//Utilities
+	static bool close_handle(void *&handle);
+
+	//Const
+	const bool m_disableProxy;
+	const std::wstring m_userAgentStr;
 	const bool m_verbose;
 
+	//Handle
 	void *m_hInternet;
-	void *m_hConnection;
-	void *m_hRequest;
 };

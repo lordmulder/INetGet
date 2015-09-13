@@ -27,11 +27,29 @@
 class HttpClient : public AbstractClient
 {
 public:
-	HttpClient(const bool &verbose);
+	//Constructor & destructor
+	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
 	~HttpClient(void);
 
-	virtual bool connection_init(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
-	virtual bool request_init(const std::wstring &verb, const std::wstring &path, const bool &secure);
-	virtual bool query_result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type);
+	//Connection handling
+	virtual bool open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path);
+	virtual bool close(void);
+
+	//Fetch result
+	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type);
+
+private:
+	//Create connection/request
+	bool connect(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
+	bool create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path);
+
+	//Utilities
+	static const wchar_t *get_verb(const http_verb_t &verb);
+	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
+	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
+
+	//Handles
+	void *m_hConnection;
+	void *m_hRequest;
 };
 
