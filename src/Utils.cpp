@@ -27,6 +27,8 @@
 
 //CRT
 #include <sstream>
+#include <iostream>
+#include <iomanip>
 
 //Win32
 #define WIN32_LEAN_AND_MEAN 1
@@ -172,4 +174,68 @@ uint64_t get_system_time(void)
 	time64.LowPart = ftime.dwLowDateTime;
 
 	return time64.QuadPart;
+}
+
+//=============================================================================
+// STRING FORMATTING
+//=============================================================================
+
+std::wstring bytes_to_string(const double &count)
+{
+	const wchar_t *const UNITS[] =
+	{
+		L"Byte", L"KB", L"MB", L"GB", L"TB", L"PB", L"EB", L"ZB", L"YB", NULL
+	};
+
+	if(count < 0.0)
+	{
+		return std::wstring(L"N/A");
+	}
+
+	double value = count;
+	size_t index = 0;
+	while((value > 1000.0) && (index < 8))
+	{
+		index++;
+		value /= 1024.0;
+	}
+
+	const size_t prec = (index > 0) ? ((value < 100.0) ? ((value < 10.0) ? 3 : 2) : 1) : 0;
+
+	std::wostringstream str;
+	str << std::fixed << std::setprecision(prec) << value << L' ' << UNITS[index];
+	return str.str();
+}
+
+std::wstring ticks_to_string(const double &count)
+{
+	const wchar_t *const UNITS[] =
+	{
+		L"sec", L"min", L"hrs", NULL
+	};
+
+	if(count < 0.0)
+	{
+		return std::wstring(L"N/A");
+	}
+
+	double value = count;
+	size_t index = 0;
+	while((value > 60.0) && (index < 2))
+	{
+		index++;
+		value /= 60.0;
+	}
+
+	std::wostringstream str;
+	if(index > 0)
+	{
+		double intpart; const double fracpart = modf(value, &intpart);
+		str << std::fixed << std::setprecision(0) << std::setw(0) << intpart << L':' << std::setw(2) << std::setfill(L'0') << (fracpart * 60.0) << L' ' << UNITS[index];
+	}
+	else
+	{
+		str << std::fixed << std::setprecision(0) << value << L' ' << UNITS[index];
+	}
+	return str.str();
 }

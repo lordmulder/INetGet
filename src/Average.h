@@ -22,16 +22,24 @@
 
 #pragma once
 
-#include <string>
-#include <stdint.h>
+#include <deque>
+#include <vector>
+#include <unordered_map>
 
-static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
+class Average
+{
+public:
+	Average(const size_t &queue_len);
+	~Average();
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
-std::wstring status_to_string(const uint32_t &status_code);
-uint64_t     get_system_time(void);
-std::wstring bytes_to_string(const double &count);
-std::wstring ticks_to_string(const double &count);
+	double update(const double &value);
+
+private:
+	void initialize_weights(const size_t filter_len);
+	
+	const size_t m_queue_len;
+	
+	std::deque<double> m_values;
+	std::unordered_map<size_t,std::vector<double>> m_weights;
+};
 

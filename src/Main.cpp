@@ -29,6 +29,7 @@
 #include "Sink_File.h"
 #include "Sink_StdOut.h"
 #include "Sink_Null.h"
+#include "Average.h"
 
 //Win32
 #define NOMINMAX 1
@@ -51,7 +52,6 @@
 #error Inconsistent DEBUG flags!
 #endif
 
-static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 #define UPDATE(OLD,NEW,ALPHA) (((OLD) * (1.0 - (ALPHA))) + ((NEW) * (ALPHA)))
 #define IS_HTTPS(URL) ((URL).getScheme() == INTERNET_SCHEME_HTTPS)
 
@@ -139,36 +139,63 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 {
 	static const wchar_t *const UNSPECIFIED = L"<N/A>";
 
-	std::wcerr << L"--> Status code: "      << status_code << L'[' << status_to_string(status_code) << "]\n";
+	std::wcerr << L"--> Status code: "      << status_code << L" [" << status_to_string(status_code) << "]\n";
 	std::wcerr << L"--> Content type: "     << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
 	std::wcerr << L"--> Content encoding: " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
 	std::wcerr << L"--> Length (bytes): "   << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L'\n';
 	std::wcerr << std::endl;
 }
 
-static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, const uint64_t start_time, uint64_t &last_update, uint8_t &index, const bool &force = false)
+static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, uint64_t &last_update, uint64_t &last_bytes, Average &rate_estimate, uint8_t &index, const bool &force = false)
 {
 	static const wchar_t SPINNER[4] = { L'-', L'\\', L'/', L'-' };
-	static const uint64_t UPDATE_INTERVAL = TICKS_PER_SECCOND / 8;
+	static const uint64_t UPDATE_INTERVAL = TICKS_PER_SECCOND / 4;
 
 	const uint64_t current_time = get_system_time();
 	if(force || ((current_time - last_update) > UPDATE_INTERVAL))
 	{
+		double current_rate = -1.0;
+		if((last_update > 0) && (total_bytes > 0))
+		{
+			current_rate = rate_estimate.update((double(total_bytes - last_bytes) / double(current_time - last_update)) * double(TICKS_PER_SECCOND));
+		}
+
 		last_update = current_time;
-		const double rate_estimate = ((double(total_bytes) / double(current_time - start_time)) * double(TICKS_PER_SECCOND));
+		last_bytes = total_bytes;
 
 		const std::ios::fmtflags stateBackup(std::wcout.flags());
 		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0);
 
 		if((file_size > 0) && (file_size != AbstractClient::SIZE_UNKNOWN))
 		{
-			const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / rate_estimate) : 0.0;
 			const double percent = 100.0 * std::min(1.0, double(total_bytes) / double(file_size));
-			std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << file_size << " bytes received, " << (rate_estimate  * 0.001) << " KB/s, " << time_left << " seconds left..." << std::flush;
+			if(current_rate >= 0.0)
+			{
+				const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
+				if(time_left > 3)
+				{
+					std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, " << ticks_to_string(time_left) << " remaining...   " << std::flush;
+				}
+				else
+				{
+					std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, almost finished...   " << std::flush;
+				}
+			}
+			else
+			{
+				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, please stand by...   " << std::flush;
+			}
 		}
 		else
 		{
-			std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << total_bytes << " bytes received, " << (rate_estimate  * 0.001) << " KBit/s..." << std::flush;
+			if(current_rate >= 0.0)
+			{
+				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, please stand by...   " << std::flush;
+			}
+			else
+			{
+				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << bytes_to_string(double(file_size)) << " received, please stand by...   " << std::flush;
+			}
 		}
 
 		std::wcout.flags(stateBackup);
@@ -197,12 +224,12 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	const uint64_t time_start = get_system_time();
 	uint64_t total_bytes = 0, last_update = 0, last_bytes = 0;
 	uint8_t index = 0;
-	double rate_estimate = -1.0;
+	Average rate_estimate(255);
 	bool eof_flag = false;
 
 	//Print progress
-	std::wcerr << L"Download is progress:" << std::endl;
-	print_progress(total_bytes, file_size, time_start, last_update, index, true);
+	std::wcerr << L"Download in progress:" << std::endl;
+	print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index, true);
 
 	//Download file
 	while(!eof_flag)
@@ -224,11 +251,11 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 			}
 		}
 
-		print_progress(total_bytes, file_size, time_start, last_update, index);
+		print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index);
 	}
 
-	print_progress(total_bytes, file_size, time_start, last_update, index, true);
-	std::wcerr << "\n\nDownload completed successfully in " << double(get_system_time() - time_start) / TICKS_PER_SECCOND << " seconds.\n" << std::endl;
+	print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index, true);
+	std::wcerr << "\b\bdone\n\nDownload completed successfully in " << double(get_system_time() - time_start) / TICKS_PER_SECCOND << " seconds.\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
@@ -253,7 +280,7 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 	}
 
 	//Print some status information
-	std::wcerr << L"HTTP response has been received from server:\n";
+	std::wcerr << L"HTTP response successfully received from server:\n";
 	print_response_info(status_code, file_size, content_type, content_encd);
 
 	//Request successful?
@@ -275,10 +302,9 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 
-
 	//Print application info
 	print_logo();
-
+	
 	//Parse command-line parameters
 	Params params;
 	if(!params.initialize(argc, argv))
@@ -303,7 +329,7 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Print request URL
-	std::wcerr << L"Request URL:\n" << params.getSource() << L'\n' << std::endl;
+	std::wcerr << L"Request address:\n" << params.getSource() << L'\n' << std::endl;
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;

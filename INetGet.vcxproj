@@ -11,6 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Average.cpp" />
     <ClCompile Include="src\Client_Abstract.cpp" />
     <ClCompile Include="src\Client_HTTP.cpp" />
     <ClCompile Include="src\Main.cpp" />
@@ -24,6 +25,7 @@
     <ClCompile Include="src\Utils.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Average.h" />
     <ClInclude Include="src\Client_Abstract.h" />
     <ClInclude Include="src\Client_HTTP.h" />
     <ClInclude Include="src\Params.h" />

@@ -164,7 +164,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nConnection to server could not be established:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 		
@@ -225,7 +225,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const size_t &buff_size, size_t &b
 	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "\n\nInternetReadFile() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
