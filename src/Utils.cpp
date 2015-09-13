@@ -83,6 +83,25 @@ std::wstring &trim(std::wstring &str)
 // WIN32/WININET ERROR TO STRING
 //=============================================================================
 
+static std::wstring &fixup_error_msg(std::wstring &error_msg, const uint32_t &error_code)
+{
+	if(error_msg.empty())
+	{
+		std::wostringstream str;
+		str << L"Unknown error (Code: " << error_code << L").";
+		error_msg = str.str();
+	}
+	else
+	{
+		const wchar_t last = error_msg[error_msg.length()-1];
+		if((last != L'.') && (last != L'!') && (last != L'?') && (last != L',') && (last != L';'))
+		{
+			error_msg += L'.';
+		}
+	}
+	return error_msg;
+}
+
 std::wstring win_error_string(const uint32_t &error_code)
 {
 	std::wstring result;
@@ -104,28 +123,12 @@ std::wstring win_error_string(const uint32_t &error_code)
 		}
 	}
 
-	if(result.empty())
-	{
-		std::wostringstream str;
-		str << L"Unknown error (Code: " << error_code << L").";
-		result = str.str();
-	}
-	else
-	{
-		const wchar_t last = result[result.length()-1];
-		if((last != L'.') && (last != L'!') && (last != L'?') && (last != L',') && (last != L';'))
-		{
-			result += L'.';
-		}
-	}
-
-	return result;
+	return fixup_error_msg(result, error_code);
 }
 
 std::wstring crt_error_string(const int &error_code)
 {
 	std::wstring result;
-
 	static const size_t BUFFSIZE = 2048;
 	wchar_t buffer[BUFFSIZE];
 	if(_wcserror_s(buffer, BUFFSIZE, error_code) == 0)
@@ -133,12 +136,5 @@ std::wstring crt_error_string(const int &error_code)
 		result = trim(std::wstring(buffer));
 	}
 
-	if(result.empty())
-	{
-		std::wostringstream str;
-		str << L"Unknown error (Code: " << error_code << L").";
-		result = str.str();
-	}
-
-	return result;
+	return fixup_error_msg(result, uint32_t(error_code));
 }

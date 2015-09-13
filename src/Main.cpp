@@ -128,7 +128,7 @@ static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring 
 		sink.reset(new FileSink(fileName));
 	}
 
-	return !!sink;
+	return sink ? sink->open() : false;
 }
 
 static std::wstring status_to_string(const uint32_t &status_code)
