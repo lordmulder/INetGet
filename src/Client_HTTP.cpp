@@ -175,7 +175,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 // QUERY RESULT
 //=============================================================================
 
-bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type, std::wstring &content_encd)
+bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd)
 {
 	if(m_hRequest == NULL)
 	{
@@ -188,9 +188,10 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_siz
 		status_code = 0;
 	}
 
-	if(!get_header_int(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, file_size))
+	uint32_t content_length = 0;
+	if(!get_header_int(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
 	{
-		file_size = SIZE_UNKNOWN;
+		content_length = 0;
 	}
 
 	if(!get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE, content_type))
@@ -204,7 +205,32 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_siz
 	}
 
 	success = ((status_code >= 200) && (status_code < 300));
+	file_size = ((content_length > 0) && (content_length < UINT32_MAX)) ? uint64_t(content_length) : SIZE_UNKNOWN;
 	return (status_code > 0);
+}
+
+//=============================================================================
+// READ PAYLOAD
+//=============================================================================
+
+bool HttpClient::read_data(uint8_t *out_buff, const size_t &buff_size, size_t &bytes_read, bool &eof_flag)
+{
+	if(m_hRequest == NULL)
+	{
+		std::wcerr << "\n\nINTERNAL ERROR: There currently is no active request!" << std::endl;
+		return false; /*request not created yet*/
+	}
+
+	DWORD temp;
+	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
+	{
+		const DWORD error_code = GetLastError();
+		std::wcerr << "\n\nInternetReadFile() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		return false;
+	}
+
+	eof_flag = ((bytes_read = temp) < 1);
+	return true;
 }
 
 //=============================================================================

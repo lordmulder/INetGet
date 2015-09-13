@@ -31,6 +31,7 @@
 #include "Sink_Null.h"
 
 //Win32
+#define NOMINMAX 1
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
 #include <WinInet.h>
@@ -44,11 +45,14 @@
 #include <fcntl.h>
 #include <memory>
 #include <sstream>
+#include <algorithm>
 
 #if (defined(NDEBUG) && defined(_DEBUG)) || ((!defined(NDEBUG)) && (!defined(_DEBUG)))
 #error Inconsistent DEBUG flags!
 #endif
 
+static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
+#define UPDATE(OLD,NEW,ALPHA) (((OLD) * (1.0 - (ALPHA))) + ((NEW) * (ALPHA)))
 #define IS_HTTPS(URL) ((URL).getScheme() == INTERNET_SCHEME_HTTPS)
 
 //=============================================================================
@@ -131,43 +135,51 @@ static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring 
 	return sink ? sink->open() : false;
 }
 
-static std::wstring status_to_string(const uint32_t &status_code)
-{
-	std::wostringstream str;
-	str << status_code << " [";
-	bool found = false;
-	for(size_t i = 0; STATUS_CODES[i].info; i++)
-	{
-		if(STATUS_CODES[i].code == status_code)
-		{
-			found = true;
-			str << STATUS_CODES[i].info << "]\n";
-			break;
-		}
-	}
-	if(!found)
-	{
-		str << "Unknown]\n";
-	}
-	return str.str();
-}
-
-static void print_response_info(const uint32_t &status_code, const uint32_t &file_size,	const std::wstring &content_type, const std::wstring &content_encd)
+static void print_response_info(const uint32_t &status_code, const uint64_t &file_size,	const std::wstring &content_type, const std::wstring &content_encd)
 {
 	static const wchar_t *const UNSPECIFIED = L"<N/A>";
 
-	std::wcerr << L"--> Status code: "      << status_to_string(status_code);
+	std::wcerr << L"--> Status code: "      << status_code << L'[' << status_to_string(status_code) << "]\n";
 	std::wcerr << L"--> Content type: "     << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
 	std::wcerr << L"--> Content encoding: " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
 	std::wcerr << L"--> Length (bytes): "   << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L'\n';
 	std::wcerr << std::endl;
 }
 
+static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, const uint64_t start_time, uint64_t &last_update, uint8_t &index, const bool &force = false)
+{
+	static const wchar_t SPINNER[4] = { L'-', L'\\', L'/', L'-' };
+	static const uint64_t UPDATE_INTERVAL = TICKS_PER_SECCOND / 8;
+
+	const uint64_t current_time = get_system_time();
+	if(force || ((current_time - last_update) > UPDATE_INTERVAL))
+	{
+		last_update = current_time;
+		const double rate_estimate = ((double(total_bytes) / double(current_time - start_time)) * double(TICKS_PER_SECCOND));
+
+		const std::ios::fmtflags stateBackup(std::wcout.flags());
+		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0);
+
+		if((file_size > 0) && (file_size != AbstractClient::SIZE_UNKNOWN))
+		{
+			const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / rate_estimate) : 0.0;
+			const double percent = 100.0 * std::min(1.0, double(total_bytes) / double(file_size));
+			std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << file_size << " bytes received, " << (rate_estimate  * 0.001) << " KB/s, " << time_left << " seconds left..." << std::flush;
+		}
+		else
+		{
+			std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << total_bytes << " bytes received, " << (rate_estimate  * 0.001) << " KBit/s..." << std::flush;
+		}
+
+		std::wcout.flags(stateBackup);
+	}
+}
+
 //=============================================================================
 // PROCESS
 //=============================================================================
 
-static int transfer_file(AbstractClient *const client, const std::wstring &outFileName)
+static int transfer_file(AbstractClient *const client, const uint64_t &file_size, const std::wstring &outFileName)
 {
 	//Open output file
 	std::unique_ptr<AbstractSink> sink;
@@ -177,6 +189,46 @@ static int transfer_file(AbstractClient *const client, const std::wstring &outFi
 		return EXIT_FAILURE;
 	}
 
+	//Allocate buffer
+	static const size_t BUFF_SIZE = 16384;
+	std::unique_ptr<uint8_t[]> buffer(new uint8_t[BUFF_SIZE]);
+
+	//Initialize local variables
+	const uint64_t time_start = get_system_time();
+	uint64_t total_bytes = 0, last_update = 0, last_bytes = 0;
+	uint8_t index = 0;
+	double rate_estimate = -1.0;
+	bool eof_flag = false;
+
+	//Print progress
+	std::wcerr << L"Download is progress:" << std::endl;
+	print_progress(total_bytes, file_size, time_start, last_update, index, true);
+
+	//Download file
+	while(!eof_flag)
+	{
+		size_t bytes_read = 0;
+		if(!client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
+		{
+			std::wcerr << "ERROR: Failed to receive incoming data, download has failed!\n" << std::endl;
+			return EXIT_FAILURE;
+		}
+
+		if(bytes_read > 0)
+		{
+			total_bytes += bytes_read;
+			if(!sink->write(buffer.get(), bytes_read))
+			{
+				std::wcerr << "ERROR: Failed to write data to sink, download has failed!\n" << std::endl;
+				return EXIT_FAILURE;
+			}
+		}
+
+		print_progress(total_bytes, file_size, time_start, last_update, index);
+	}
+
+	print_progress(total_bytes, file_size, time_start, last_update, index, true);
+	std::wcerr << "\n\nDownload completed successfully in " << double(get_system_time() - time_start) / TICKS_PER_SECCOND << " seconds.\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
@@ -190,8 +242,9 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 	}
 
 	//Query result information
-	uint32_t status_code, file_size;
 	bool success;
+	uint32_t status_code;
+	uint64_t file_size;
 	std::wstring content_type, content_encd;
 	if(!client->result(success, status_code, file_size, content_type, content_encd))
 	{
@@ -210,7 +263,7 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 		return EXIT_FAILURE;
 	}
 
-	return transfer_file(client, outFileName);
+	return transfer_file(client, file_size, outFileName);
 }
 
 //=============================================================================

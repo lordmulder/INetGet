@@ -30,7 +30,7 @@
 class AbstractClient
 {
 public:
-	static const uint32_t SIZE_UNKNOWN = UINT32_MAX;
+	static const uint64_t SIZE_UNKNOWN = UINT64_MAX;
 
 	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
 	virtual ~AbstractClient(void);
@@ -40,7 +40,10 @@ public:
 	virtual bool close(void) = 0;
 
 	//Fetch result
-	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type, std::wstring &content_encd) = 0;
+	virtual bool result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd) = 0;
+
+	//Read payload
+	virtual bool read_data(uint8_t *out_buff, const size_t &buff_size, size_t &bytes_read, bool &eof_flag) = 0;
 
 protected:
 	//WinInet initialization

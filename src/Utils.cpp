@@ -22,6 +22,9 @@
 
 #include "Utils.h"
 
+//Intenral
+#include "Types.h"
+
 //CRT
 #include <sstream>
 
@@ -137,4 +140,36 @@ std::wstring crt_error_string(const int &error_code)
 	}
 
 	return fixup_error_msg(result, uint32_t(error_code));
+}
+
+//=============================================================================
+// STATUS CODE TO STRING
+//=============================================================================
+
+std::wstring status_to_string(const uint32_t &status_code)
+{
+	for(size_t i = 0; STATUS_CODES[i].info; i++)
+	{
+		if(STATUS_CODES[i].code == status_code)
+		{
+			return std::wstring(STATUS_CODES[i].info);
+		}
+	}
+	return std::wstring(L"Unknown");
+}
+
+//=============================================================================
+// STATUS CODE TO STRING
+//=============================================================================
+
+uint64_t get_system_time(void)
+{
+	FILETIME ftime;
+	GetSystemTimeAsFileTime(&ftime);
+
+	ULARGE_INTEGER time64;
+	time64.HighPart = ftime.dwHighDateTime;
+	time64.LowPart = ftime.dwLowDateTime;
+
+	return time64.QuadPart;
 }
