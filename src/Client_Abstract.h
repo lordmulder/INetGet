@@ -40,7 +40,7 @@ public:
 	virtual bool close(void) = 0;
 
 	//Fetch result
-	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type) = 0;
+	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type, std::wstring &content_encd) = 0;
 
 protected:
 	//WinInet initialization
@@ -48,8 +48,8 @@ protected:
 	bool wininet_exit(void);
 
 	//Status callback
-	static void __stdcall callback_handler(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength);
-	virtual void update_status(const uint32_t &dwInternetStatus, const uint32_t &lpvStatusInformation);
+	static void __stdcall status_callback(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength);
+	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
 	//Utilities
 	static bool close_handle(void *&handle);

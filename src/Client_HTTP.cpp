@@ -46,6 +46,7 @@ HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentSt
 :
 	m_hConnection(NULL),
 	m_hRequest(NULL),
+	m_current_status(UINT32_MAX),
 	AbstractClient(disableProxy, userAgentStr, verbose)
 {
 }
@@ -73,7 +74,10 @@ bool HttpClient::open(const http_verb_t &verb, const bool &secure, const std::ws
 	}
 
 	//Print info
-	std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection to " << hostName << L':' << portNo << ", please wait..." << std::endl;
+	std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection to " << hostName << L':' << portNo << ", please wait:" << std::endl;
+
+	//Reset status
+	m_current_status = UINT32_MAX;
 
 	//Create connection
 	if(!connect(hostName, portNo, userName, password))
@@ -88,7 +92,7 @@ bool HttpClient::open(const http_verb_t &verb, const bool &secure, const std::ws
 	}
 
 	//Sucess
-	std::wcerr << L"Connected.\n" << std::endl;
+	std::wcerr << L"--> Response received.\n" << std::endl;
 	return true;
 }
 
@@ -122,19 +126,16 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(m_hConnection == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "Failed!\n\nInternetConnect() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
 	//Install the callback handler (only in verbose mode)
-	if(m_verbose && (m_hConnection != NULL))
+	if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&status_callback)) == INTERNET_INVALID_STATUS_CALLBACK)
 	{
-		if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&callback_handler)) == INTERNET_INVALID_STATUS_CALLBACK)
-		{
-			const DWORD error_code = GetLastError();
-			std::wcerr << "Failed!\n\nInternetSetStatusCallback() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
-			return false;
-		}
+		const DWORD error_code = GetLastError();
+		std::wcerr << "--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		return false;
 	}
 
 	return true;
@@ -154,7 +155,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "Failed!\n\nHttpOpenRequest() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nHttpOpenRequest() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -163,7 +164,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "Failed!\n\nConnection to server could not be established:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nConnection to server could not be established:\n" << error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 		
@@ -171,10 +172,10 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 }
 
 //=============================================================================
-// QUERY STATUS
+// QUERY RESULT
 //=============================================================================
 
-bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type)
+bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type, std::wstring &content_encd)
 {
 	if(m_hRequest == NULL)
 	{
@@ -197,8 +198,40 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint32_t &file_siz
 		content_type.clear();
 	}
 
+	if(!get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd))
+	{
+		content_encd.clear();
+	}
+
 	success = ((status_code >= 200) && (status_code < 300));
 	return (status_code > 0);
+}
+
+//=============================================================================
+// STATUS HANDLER
+//=============================================================================
+
+void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
+{
+	AbstractClient::update_status(status, info);
+	if(m_current_status != status)
+	{
+		bool processed = false;
+		switch(status)
+		{
+			case INTERNET_STATUS_DETECTING_PROXY:      processed = true; std::wcerr << "--> Detetcing proxy server..."                      << std::endl; break;
+			case INTERNET_STATUS_RESOLVING_NAME:       processed = true; std::wcerr << "--> Resolving host name..."                         << std::endl; break;
+			case INTERNET_STATUS_NAME_RESOLVED:        processed = true; std::wcerr << "--> Server address resolved to: " << ((LPCSTR)info) << std::endl; break;
+			case INTERNET_STATUS_CONNECTING_TO_SERVER: processed = true; std::wcerr << "--> Connecting to server..."                        << std::endl; break;
+			case INTERNET_STATUS_SENDING_REQUEST:      processed = true; std::wcerr << "--> Sending request to server..."                   << std::endl; break;
+			case INTERNET_STATUS_REDIRECT:             processed = true; std::wcerr << "--> Redirecting: " << ((PCTSTR)info)                << std::endl; break;
+			case INTERNET_STATUS_RECEIVING_RESPONSE:   processed = true; std::wcerr << "--> Request sent, awaiting response..."             << std::endl; break;
+		}
+		if(processed)
+		{
+			m_current_status = status;
+		}
+	}
 }
 
 //=============================================================================

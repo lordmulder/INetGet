@@ -36,12 +36,15 @@ public:
 	virtual bool close(void);
 
 	//Fetch result
-	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type);
+	virtual bool result(bool &success, uint32_t &status_code, uint32_t &file_size, std::wstring &content_type, std::wstring &content_encd);
 
 private:
 	//Create connection/request
 	bool connect(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
 	bool create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path);
+
+	//Status handler
+	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
 	//Utilities
 	static const wchar_t *get_verb(const http_verb_t &verb);
@@ -51,5 +54,8 @@ private:
 	//Handles
 	void *m_hConnection;
 	void *m_hRequest;
+
+	//Current status
+	uint32_t m_current_status;
 };
 

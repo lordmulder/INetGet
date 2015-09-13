@@ -110,47 +110,35 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 	return !!client;
 }
 
-static void print_response_info(const uint32_t &status_code, const uint32_t &file_size,	const std::wstring &content_type)
+static std::wstring status_to_string(const uint32_t &status_code)
 {
-	//Status code
-	std::wcerr << L"--> Status code: " << status_code << " [";
-	bool status_found = false;
+	std::wostringstream str;
+	str << status_code << " [";
+	bool found = false;
 	for(size_t i = 0; STATUS_CODES[i].info; i++)
 	{
 		if(STATUS_CODES[i].code == status_code)
 		{
-			status_found = true;
-			std::wcerr << STATUS_CODES[i].info << "]\n";
+			found = true;
+			str << STATUS_CODES[i].info << "]\n";
 			break;
 		}
 	}
-	if(!status_found)
+	if(!found)
 	{
-		std::wcerr << "Unknown]\n";
+		str << "Unknown]\n";
 	}
+	return str.str();
+}
 
-	//Content type
-	std::wcerr << L"--> Content type: ";
-	if(!content_type.empty())
-	{
-		std::wcerr << content_type << L'\n';
-	}
-	else
-	{
-		std::wcerr << L"(unspecified)\n";
-	}
+static void print_response_info(const uint32_t &status_code, const uint32_t &file_size,	const std::wstring &content_type, const std::wstring &content_encd)
+{
+	static const wchar_t *const UNSPECIFIED = L"<N/A>";
 
-	//File size
-	std::wcerr << L"--> File size: ";
-	if(file_size != AbstractClient::SIZE_UNKNOWN)
-	{
-		 std::wcerr << file_size << L" byte\n";
-	}
-	else
-	{
-		std::wcerr << L"(unspecified)\n";
-	}
-
+	std::wcerr << L"--> Status code: "      << status_to_string(status_code);
+	std::wcerr << L"--> Content type: "     << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
+	std::wcerr << L"--> Content encoding: " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
+	std::wcerr << L"--> Length (bytes): "   << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L'\n';
 	std::wcerr << std::endl;
 }
 
@@ -170,16 +158,16 @@ static int retrieve_url(AbstractClient *const client, const URL &url)
 	//Query result information
 	uint32_t status_code, file_size;
 	bool success;
-	std::wstring content_type;
-	if(!client->result(success, status_code, file_size, content_type))
+	std::wstring content_type, content_encd;
+	if(!client->result(success, status_code, file_size, content_type, content_encd))
 	{
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Print some status information
-	std::wcerr << L"HTTP request sent, awaiting response:\n";
-	print_response_info(status_code, file_size, content_type);
+	std::wcerr << L"HTTP response has been received from server:\n";
+	print_response_info(status_code, file_size, content_type, content_encd);
 
 	//Request successful?
 	if(!success)
@@ -228,7 +216,7 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Print request URL
-	std::wcerr << L"Request UR:\n" << params.getSource() << L'\n' << std::endl;
+	std::wcerr << L"Request URL:\n" << params.getSource() << L'\n' << std::endl;
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;
