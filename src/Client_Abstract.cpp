@@ -69,7 +69,7 @@ bool AbstractClient::wininet_init()
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
-			std::wcerr << "InternetOpen() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+			std::wcerr << "InternetOpen() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		}
 	}
 

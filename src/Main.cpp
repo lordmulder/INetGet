@@ -26,6 +26,9 @@
 #include "Utils.h"
 #include "Params.h"
 #include "Client_HTTP.h"
+#include "Sink_File.h"
+#include "Sink_StdOut.h"
+#include "Sink_Null.h"
 
 //Win32
 #define WIN32_LEAN_AND_MEAN 1
@@ -110,6 +113,24 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 	return !!client;
 }
 
+static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName)
+{
+	if(_wcsicmp(fileName.c_str(), L"-") == 0)
+	{
+		sink.reset(new StdOutSink());
+	}
+	else if(_wcsicmp(fileName.c_str(), L"NULL") == 0)
+	{
+		sink.reset(new NullSink());
+	}
+	else
+	{
+		sink.reset(new FileSink(fileName));
+	}
+
+	return !!sink;
+}
+
 static std::wstring status_to_string(const uint32_t &status_code)
 {
 	std::wostringstream str;
@@ -146,7 +167,20 @@ static void print_response_info(const uint32_t &status_code, const uint32_t &fil
 // PROCESS
 //=============================================================================
 
-static int retrieve_url(AbstractClient *const client, const URL &url)
+static int transfer_file(AbstractClient *const client, const std::wstring &outFileName)
+{
+	//Open output file
+	std::unique_ptr<AbstractSink> sink;
+	if(!create_sink(sink, outFileName))
+	{
+		std::wcerr << "ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	return EXIT_SUCCESS;
+}
+
+static int retrieve_url(AbstractClient *const client, const URL &url, const std::wstring &outFileName)
 {
 	//Create the HTTPS connection/request
 	if(!client->open(HTTP_GET, IS_HTTPS(url), url.getHostName(), url.getPort(), url.getUserName(), url.getPassword(), url.getUrlPath()))
@@ -176,7 +210,7 @@ static int retrieve_url(AbstractClient *const client, const URL &url)
 		return EXIT_FAILURE;
 	}
 
-	return EXIT_SUCCESS;
+	return transfer_file(client, outFileName);
 }
 
 //=============================================================================
@@ -227,7 +261,7 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), url);
+	return retrieve_url(client.get(), url, params.getOutput());
 }
 
 //=============================================================================

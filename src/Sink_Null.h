@@ -22,10 +22,23 @@
 
 #pragma once
 
+#include "Sink_Abstract.h"
+
 #include <string>
 #include <stdint.h>
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
+class NullSink : public AbstractSink
+{
+public:
+	NullSink(void);
+	virtual ~NullSink(void);
+
+	virtual bool open(void);
+	virtual bool close(void);
+
+	virtual bool write(uint8_t *const buffer, const size_t &count);
+
+private:
+	bool m_isOpen;
+};
 

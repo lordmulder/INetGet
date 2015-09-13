@@ -33,7 +33,7 @@ public:
 	static const uint32_t SIZE_UNKNOWN = UINT32_MAX;
 
 	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
-	~AbstractClient(void);
+	virtual ~AbstractClient(void);
 
 	//Connection handling
 	virtual bool open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path) = 0;

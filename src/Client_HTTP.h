@@ -29,7 +29,7 @@ class HttpClient : public AbstractClient
 public:
 	//Constructor & destructor
 	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
-	~HttpClient(void);
+	virtual ~HttpClient(void);
 
 	//Connection handling
 	virtual bool open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path);

@@ -126,7 +126,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(m_hConnection == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -134,7 +134,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&status_callback)) == INTERNET_INVALID_STATUS_CALLBACK)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -155,7 +155,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nHttpOpenRequest() function has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nHttpOpenRequest() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -164,7 +164,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nConnection to server could not be established:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nConnection to server could not be established:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 		
@@ -275,7 +275,7 @@ bool HttpClient::get_header_int(void *const request, const uint32_t type, uint32
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "HttpQueryInfo() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 	}
 
 	return false;
@@ -296,7 +296,7 @@ bool HttpClient::get_header_str(void *const request, const uint32_t type, std::w
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "HttpQueryInfo() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 	}
 
 	return false;

@@ -22,10 +22,16 @@
 
 #pragma once
 
-#include <string>
 #include <stdint.h>
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
+class AbstractSink
+{
+public:
+	AbstractSink(void);
+	virtual ~AbstractSink(void);
 
+	virtual bool open(void)  = 0;
+	virtual bool close(void) = 0;
+
+	virtual bool write(uint8_t *const buffer, const size_t &count) = 0;
+};

@@ -20,12 +20,55 @@
 // http://www.gnu.org/licenses/gpl-2.0.txt
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma once
+#include "Sink_Null.h"
 
-#include <string>
-#include <stdint.h>
+//Internal
+#include "Utils.h"
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
+//CRT
+#include <cstdio>
+#include <iostream>
 
+//=============================================================================
+// CONSTRUCTOR / DESTRUCTOR
+//=============================================================================
+
+NullSink::NullSink(void)
+:
+	m_isOpen(false)
+{
+}
+
+NullSink::~NullSink(void)
+{
+	close();
+}
+
+//=============================================================================
+// OPEN / CLOSE
+//=============================================================================
+
+bool NullSink::open(void)
+{
+	m_isOpen  = true;
+	return true;
+}
+
+bool NullSink::close(void)
+{
+	m_isOpen  = false;
+	return true;
+}
+
+//=============================================================================
+// WRITE
+//=============================================================================
+
+bool NullSink::write(uint8_t *const buffer, const size_t &count)
+{
+	if(m_isOpen)
+	{
+		return true;
+	}
+	return false;
+}

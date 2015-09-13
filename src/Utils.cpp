@@ -83,7 +83,7 @@ std::wstring &trim(std::wstring &str)
 // WIN32/WININET ERROR TO STRING
 //=============================================================================
 
-std::wstring error_string(const uint32_t &error_code)
+std::wstring win_error_string(const uint32_t &error_code)
 {
 	std::wstring result;
 	if(error_code)
@@ -117,6 +117,27 @@ std::wstring error_string(const uint32_t &error_code)
 		{
 			result += L'.';
 		}
+	}
+
+	return result;
+}
+
+std::wstring crt_error_string(const int &error_code)
+{
+	std::wstring result;
+
+	static const size_t BUFFSIZE = 2048;
+	wchar_t buffer[BUFFSIZE];
+	if(_wcserror_s(buffer, BUFFSIZE, error_code) == 0)
+	{
+		result = trim(std::wstring(buffer));
+	}
+
+	if(result.empty())
+	{
+		std::wostringstream str;
+		str << L"Unknown error (Code: " << error_code << L").";
+		result = str.str();
 	}
 
 	return result;

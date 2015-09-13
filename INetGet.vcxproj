@@ -15,6 +15,10 @@
     <ClCompile Include="src\Client_HTTP.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Params.cpp" />
+    <ClCompile Include="src\Sink_Abstract.cpp" />
+    <ClCompile Include="src\Sink_File.cpp" />
+    <ClCompile Include="src\Sink_Null.cpp" />
+    <ClCompile Include="src\Sink_StdOut.cpp" />
     <ClCompile Include="src\Types.cpp" />
     <ClCompile Include="src\URL.cpp" />
     <ClCompile Include="src\Utils.cpp" />
@@ -23,6 +27,10 @@
     <ClInclude Include="src\Client_Abstract.h" />
     <ClInclude Include="src\Client_HTTP.h" />
     <ClInclude Include="src\Params.h" />
+    <ClInclude Include="src\Sink_Abstract.h" />
+    <ClInclude Include="src\Sink_File.h" />
+    <ClInclude Include="src\Sink_Null.h" />
+    <ClInclude Include="src\Sink_StdOut.h" />
     <ClInclude Include="src\Types.h" />
     <ClInclude Include="src\URL.h" />
     <ClInclude Include="src\Utils.h" />

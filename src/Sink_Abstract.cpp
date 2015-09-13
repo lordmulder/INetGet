@@ -20,12 +20,12 @@
 // http://www.gnu.org/licenses/gpl-2.0.txt
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma once
+#include "Sink_Abstract.h"
 
-#include <string>
-#include <stdint.h>
+AbstractSink::AbstractSink()
+{
+}
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
-
+AbstractSink::~AbstractSink()
+{
+}
