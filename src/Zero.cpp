@@ -28,6 +28,7 @@
 
 //CRT
 #include <iostream>
+#include <process.h>
 #include <io.h>
 #include <fcntl.h>
 
@@ -36,21 +37,8 @@
 #error Inconsistent DEBUG flags!
 #endif
 
-//Forward declaration
-
-//=============================================================================
-// STARTUP
-//=============================================================================
-
-int inetget_main(const int argc, const wchar_t *const argv[]);
-
-static int inetget_startup(const int argc, const wchar_t *const argv[])
-{
-	_setmode(_fileno(stdout), _O_BINARY);
-	_setmode(_fileno(stderr), _O_U8TEXT);
-	timeBeginPeriod(1);
-	return inetget_main(argc, argv);
-}
+//Abort flags
+volatile bool g_userAbortFlag = false;
 
 //=============================================================================
 // ERROR HANDLING
@@ -69,12 +57,40 @@ static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS *ExceptionInf
 	return EXCEPTION_EXECUTE_HANDLER;
 }
 
+static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
+{
+	switch(dwCtrlType)
+	{
+	case CTRL_C_EVENT:
+	case CTRL_BREAK_EVENT:
+	case CTRL_CLOSE_EVENT:
+		g_userAbortFlag = true;
+		return TRUE;
+	}
+	return FALSE;
+}
+
 static void setup_error_handlers(void)
 {
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 	SetUnhandledExceptionFilter(my_exception_handler);
 	_set_invalid_parameter_handler(my_invalid_param_handler);
 	SetDllDirectoryW(L""); /*don'tload DLL from "current" directory*/
+}
+
+//=============================================================================
+// STARTUP
+//=============================================================================
+
+int inetget_main(const int argc, const wchar_t *const argv[]);
+
+static int inetget_startup(const int argc, const wchar_t *const argv[])
+{
+	_setmode(_fileno(stdout), _O_BINARY);
+	_setmode(_fileno(stderr), _O_U8TEXT);
+	timeBeginPeriod(1);
+	SetConsoleCtrlHandler(my_sigint_handler, TRUE);
+	return inetget_main(argc, argv);
 }
 
 //=============================================================================

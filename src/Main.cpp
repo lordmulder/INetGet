@@ -47,7 +47,7 @@
 #include <sstream>
 #include <algorithm>
 
-#define UPDATE(OLD,NEW,ALPHA) (((OLD) * (1.0 - (ALPHA))) + ((NEW) * (ALPHA)))
+//Helper macros
 #define IS_HTTPS(URL) ((URL).getScheme() == INTERNET_SCHEME_HTTPS)
 
 //=============================================================================
@@ -148,40 +148,48 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 	if(force || (timer_update.query() > 0.2))
 	{
 		const std::ios::fmtflags stateBackup(std::wcout.flags());
-		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0);
+		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << "\r[" << SPINNER[(index++) & 3] << "] ";
 
 		if((file_size > 0) && (file_size != AbstractClient::SIZE_UNKNOWN))
 		{
 			const double percent = 100.0 * std::min(1.0, double(total_bytes) / double(file_size));
-			if(current_rate >= 0.0)
+			if(!std::isnan(current_rate))
 			{
-				const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
-				if(time_left > 3)
+				if(current_rate > 0.0)
 				{
-					std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, " << ticks_to_string(time_left) << " remaining...   " << std::flush;
+					const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
+					if(time_left > 3)
+					{
+						std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, " << second_to_string(time_left) << " remaining...";
+					}
+					else
+					{
+						std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, almost finished...";
+					}
 				}
 				else
 				{
-					std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, almost finished...   " << std::flush;
+					std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
 				}
 			}
 			else
 			{
-				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << percent << "% of " << bytes_to_string(double(file_size)) << " received, please stand by...   " << std::flush;
+				std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, please stand by...";
 			}
 		}
 		else
 		{
-			if(current_rate >= 0.0)
+			if(!std::isnan(current_rate))
 			{
-				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << bytes_to_string(double(file_size)) << " received, " << bytes_to_string(current_rate) << "/s, please stand by...   " << std::flush;
+				std::wcerr << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
 			}
 			else
 			{
-				std::wcerr << "\r[" << SPINNER[(index++) & 3] << "] " << bytes_to_string(double(file_size)) << " received, please stand by...   " << std::flush;
+				std::wcerr << nbytes_to_string(double(file_size)) << " received, please stand by...";
 			}
 		}
 
+		std::wcerr << "    " << std::flush;
 		std::wcout.flags(stateBackup);
 		timer_update.reset();
 	}
@@ -211,7 +219,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	uint8_t index = 0;
 	Average rate_estimate(125);
 	bool eof_flag = false;
-	double current_rate = -1;
+	double current_rate = std::numeric_limits<double>::quiet_NaN();;
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
@@ -221,6 +229,8 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	while(!eof_flag)
 	{
 		size_t bytes_read = 0;
+
+		CHECK_USER_ABORT();
 		if(!client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
 		{
 			std::wcerr << "ERROR: Failed to receive incoming data, download has failed!\n" << std::endl;
@@ -229,8 +239,9 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 		if(bytes_read > 0)
 		{
-			total_bytes += bytes_read;
+			CHECK_USER_ABORT();
 			transferred_bytes += bytes_read;
+			total_bytes += bytes_read;
 
 			const double interval = timer_transfer.query();
 			if(interval >= 0.5)
@@ -247,13 +258,14 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 			}
 		}
 
+		CHECK_USER_ABORT();
 		print_progress(total_bytes, file_size, timer_update, current_rate, index);
 	}
 
 	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
-
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
-	std::wcerr << "\b\bdone\n\nDownload completed in " << ticks_to_string(total_time) << " (avg. rate: " << bytes_to_string(average_rate) << "/s).\n" << std::endl;
+	std::wcerr << "\b\bdone\n\nDownload completed in " << second_to_string(total_time) << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
+
 	return EXIT_SUCCESS;
 }
 
@@ -266,11 +278,14 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 		return EXIT_FAILURE;
 	}
 
-	//Query result information
+	//Initialize local variables
 	bool success;
 	uint32_t status_code;
 	uint64_t file_size;
 	std::wstring content_type, content_encd;
+
+	//Query result information
+	CHECK_USER_ABORT();
 	if(!client->result(success, status_code, file_size, content_type, content_encd))
 	{
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
@@ -288,6 +303,7 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 		return EXIT_FAILURE;
 	}
 
+	CHECK_USER_ABORT();
 	return transfer_file(client, file_size, outFileName);
 }
 

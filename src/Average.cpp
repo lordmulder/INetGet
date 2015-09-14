@@ -24,6 +24,7 @@
 
 //CRT
 #include <stdint.h>
+#include <limits>
 
 //Const
 static const size_t MIN_LEN = 3;
@@ -102,5 +103,5 @@ double Average::update(const double &value)
 		return accumulator;
 	}
 
-	return -1.0;
+	return std::numeric_limits<double>::quiet_NaN();
 }

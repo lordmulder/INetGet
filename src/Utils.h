@@ -25,12 +25,22 @@
 #include <string>
 #include <stdint.h>
 
+extern volatile bool g_userAbortFlag;
 static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 std::wstring &trim(std::wstring &str);
 std::wstring win_error_string(const uint32_t &error_code);
 std::wstring crt_error_string(const int &error_code);
 std::wstring status_to_string(const uint32_t &status_code);
-std::wstring bytes_to_string(const double &count);
-std::wstring ticks_to_string(const double &count);
+std::wstring nbytes_to_string(const double &count);
+std::wstring second_to_string(const double &count);
 
+#define CHECK_USER_ABORT() do \
+{ \
+	if(g_userAbortFlag)  \
+	{ \
+		std::wcerr << L"\n\nSIGINT: Operation aborted by user !!!\n" << std::endl; \
+		for(;;) exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)

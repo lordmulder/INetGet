@@ -164,7 +164,7 @@ std::wstring status_to_string(const uint32_t &status_code)
 // STRING FORMATTING
 //=============================================================================
 
-std::wstring bytes_to_string(const double &count)
+std::wstring nbytes_to_string(const double &count)
 {
 	const wchar_t *const UNITS[] =
 	{
@@ -191,7 +191,7 @@ std::wstring bytes_to_string(const double &count)
 	return str.str();
 }
 
-std::wstring ticks_to_string(const double &count)
+std::wstring second_to_string(const double &count)
 {
 	const wchar_t *const UNITS[] =
 	{

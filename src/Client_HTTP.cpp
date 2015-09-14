@@ -112,6 +112,7 @@ bool HttpClient::close(void)
 		success = false;
 	}
 
+	CHECK_USER_ABORT();
 	return success;
 }
 
@@ -138,6 +139,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 		return false;
 	}
 
+	CHECK_USER_ABORT();
 	return true;
 }
 
@@ -167,7 +169,8 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 		std::wcerr << "--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
-		
+	
+	CHECK_USER_ABORT();
 	return true;
 }
 
@@ -239,6 +242,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const size_t &buff_size, size_t &b
 
 void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
 {
+	CHECK_USER_ABORT();
 	AbstractClient::update_status(status, info);
 	if(m_current_status != status)
 	{
