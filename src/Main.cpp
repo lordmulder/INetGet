@@ -150,9 +150,9 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		const std::ios::fmtflags stateBackup(std::wcout.flags());
 		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << "\r[" << SPINNER[(index++) & 3] << "] ";
 
-		if((file_size > 0) && (file_size != AbstractClient::SIZE_UNKNOWN))
+		if(file_size != AbstractClient::SIZE_UNKNOWN)
 		{
-			const double percent = 100.0 * std::min(1.0, double(total_bytes) / double(file_size));
+			const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
 			if(!std::isnan(current_rate))
 			{
 				if(current_rate > 0.0)
@@ -181,11 +181,11 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		{
 			if(!std::isnan(current_rate))
 			{
-				std::wcerr << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
+				std::wcerr << nbytes_to_string(double(total_bytes)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
 			}
 			else
 			{
-				std::wcerr << nbytes_to_string(double(file_size)) << " received, please stand by...";
+				std::wcerr << nbytes_to_string(double(total_bytes)) << " received, please stand by...";
 			}
 		}
 
@@ -233,7 +233,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 		CHECK_USER_ABORT();
 		if(!client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
 		{
-			std::wcerr << "ERROR: Failed to receive incoming data, download has failed!\n" << std::endl;
+			std::wcerr << "ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
 
@@ -253,7 +253,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 			if(!sink->write(buffer.get(), bytes_read))
 			{
-				std::wcerr << "ERROR: Failed to write data to sink, download has failed!\n" << std::endl;
+				std::wcerr << "ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
 				return EXIT_FAILURE;
 			}
 		}
@@ -264,8 +264,11 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
-	std::wcerr << "\b\bdone\n\nDownload completed in " << second_to_string(total_time) << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 
+	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
+	sink->close();
+
+	std::wcerr << "done\n\nDownload completed in " << second_to_string(total_time) << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 

@@ -228,7 +228,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const size_t &buff_size, size_t &b
 	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "\b\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
