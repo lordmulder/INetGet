@@ -193,9 +193,14 @@ std::wstring nbytes_to_string(const double &count)
 
 std::wstring second_to_string(const double &count)
 {
+	const double COUNT[] =
+	{
+		60.0, 60.0, 24.0, 7.0, 52.0, 1.0
+	};
+
 	const wchar_t *const UNITS[] =
 	{
-		L"sec", L"min", L"hrs", NULL
+		L"sec", L"min", L"hrs", L"dys", L"wks", L"yrs", NULL
 	};
 
 	if(count < 0.0)
@@ -205,14 +210,17 @@ std::wstring second_to_string(const double &count)
 
 	double value = count;
 	size_t index = 0;
-	while((value > 60.0) && (index < 2))
+	while((value > COUNT[index]) && (index < 5))
 	{
-		index++;
-		value /= 60.0;
+		value /= COUNT[index++];
 	}
 
 	std::wostringstream str;
-	if(index > 0)
+	if(index > 2)
+	{
+		str << std::fixed << std::setprecision(2) << std::setw(0) << std::setfill(L'0') << value << L' ' << UNITS[index];
+	}
+	else if(index > 0)
 	{
 		double intpart; const double fracpart = modf(value, &intpart);
 		str << std::fixed << std::setprecision(0) << std::setw(0) << intpart << L':' << std::setw(2) << std::setfill(L'0') << (fracpart * 60.0) << L' ' << UNITS[index];
@@ -221,5 +229,6 @@ std::wstring second_to_string(const double &count)
 	{
 		str << std::fixed << std::setprecision(0) << value << L' ' << UNITS[index];
 	}
+
 	return str.str();
 }
