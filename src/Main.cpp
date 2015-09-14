@@ -29,6 +29,7 @@
 #include "Sink_File.h"
 #include "Sink_StdOut.h"
 #include "Sink_Null.h"
+#include "Timer.h"
 #include "Average.h"
 
 //Win32
@@ -42,15 +43,9 @@
 #include <iostream>
 #include <iomanip>
 #include <stdexcept>
-#include <io.h>
-#include <fcntl.h>
 #include <memory>
 #include <sstream>
 #include <algorithm>
-
-#if (defined(NDEBUG) && defined(_DEBUG)) || ((!defined(NDEBUG)) && (!defined(_DEBUG)))
-#error Inconsistent DEBUG flags!
-#endif
 
 #define UPDATE(OLD,NEW,ALPHA) (((OLD) * (1.0 - (ALPHA))) + ((NEW) * (ALPHA)))
 #define IS_HTTPS(URL) ((URL).getScheme() == INTERNET_SCHEME_HTTPS)
@@ -146,23 +141,12 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 	std::wcerr << std::endl;
 }
 
-static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, uint64_t &last_update, uint64_t &last_bytes, Average &rate_estimate, uint8_t &index, const bool &force = false)
+static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, Timer &timer_update, const double &current_rate, uint8_t &index, const bool &force = false)
 {
 	static const wchar_t SPINNER[4] = { L'-', L'\\', L'/', L'-' };
-	static const uint64_t UPDATE_INTERVAL = TICKS_PER_SECCOND / 4;
 
-	const uint64_t current_time = get_system_time();
-	if(force || ((current_time - last_update) > UPDATE_INTERVAL))
+	if(force || (timer_update.query() > 0.2))
 	{
-		double current_rate = -1.0;
-		if((last_update > 0) && (total_bytes > 0))
-		{
-			current_rate = rate_estimate.update((double(total_bytes - last_bytes) / double(current_time - last_update)) * double(TICKS_PER_SECCOND));
-		}
-
-		last_update = current_time;
-		last_bytes = total_bytes;
-
 		const std::ios::fmtflags stateBackup(std::wcout.flags());
 		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0);
 
@@ -199,6 +183,7 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		}
 
 		std::wcout.flags(stateBackup);
+		timer_update.reset();
 	}
 }
 
@@ -221,15 +206,16 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	std::unique_ptr<uint8_t[]> buffer(new uint8_t[BUFF_SIZE]);
 
 	//Initialize local variables
-	const uint64_t time_start = get_system_time();
-	uint64_t total_bytes = 0, last_update = 0, last_bytes = 0;
+	Timer timer_start, timer_transfer, timer_update;
+	uint64_t total_bytes = 0ui64, transferred_bytes = 0ui64;
 	uint8_t index = 0;
-	Average rate_estimate(255);
+	Average rate_estimate(125);
 	bool eof_flag = false;
+	double current_rate = -1;
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
-	print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index, true);
+	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
 
 	//Download file
 	while(!eof_flag)
@@ -244,6 +230,16 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 		if(bytes_read > 0)
 		{
 			total_bytes += bytes_read;
+			transferred_bytes += bytes_read;
+
+			const double interval = timer_transfer.query();
+			if(interval >= 0.5)
+			{
+				current_rate = rate_estimate.update(double(transferred_bytes) / interval);
+				timer_transfer.reset();
+				transferred_bytes = 0ui64;
+			}
+
 			if(!sink->write(buffer.get(), bytes_read))
 			{
 				std::wcerr << "ERROR: Failed to write data to sink, download has failed!\n" << std::endl;
@@ -251,11 +247,13 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 			}
 		}
 
-		print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index);
+		print_progress(total_bytes, file_size, timer_update, current_rate, index);
 	}
 
-	print_progress(total_bytes, file_size, last_update, last_bytes, rate_estimate, index, true);
-	std::wcerr << "\b\bdone\n\nDownload completed successfully in " << double(get_system_time() - time_start) / TICKS_PER_SECCOND << " seconds.\n" << std::endl;
+	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
+
+	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
+	std::wcerr << "\b\bdone\n\nDownload completed in " << ticks_to_string(total_time) << " (avg. rate: " << bytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
@@ -297,11 +295,8 @@ static int retrieve_url(AbstractClient *const client, const URL &url, const std:
 // MAIN
 //=============================================================================
 
-static int inetget_main(const int argc, const wchar_t *const argv[])
+int inetget_main(const int argc, const wchar_t *const argv[])
 {
-	_setmode(_fileno(stdout), _O_BINARY);
-	_setmode(_fileno(stderr), _O_U8TEXT);
-
 	//Print application info
 	print_logo();
 	
@@ -341,72 +336,4 @@ static int inetget_main(const int argc, const wchar_t *const argv[])
 
 	//Retrieve the URL
 	return retrieve_url(client.get(), url, params.getOutput());
-}
-
-//=============================================================================
-// ERROR HANDLING
-//=============================================================================
-
-static void my_invalid_param_handler(const wchar_t* exp, const wchar_t* fun, const wchar_t* fil, unsigned int, uintptr_t)
-{
-	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
-	_exit(EXIT_FAILURE);
-}
-
-static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
-{
-	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
-	_exit(EXIT_FAILURE);
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
-static void setup_error_handlers(void)
-{
-	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
-	SetUnhandledExceptionFilter(my_exception_handler);
-	_set_invalid_parameter_handler(my_invalid_param_handler);
-	SetDllDirectoryW(L""); /*don'tload DLL from "current" directory*/
-}
-
-//=============================================================================
-// ENTRY POINT
-//=============================================================================
-
-static int wmain_ex(const int argc, const wchar_t *const argv[])
-{
-	int ret = -1;
-	try
-	{
-		ret = inetget_main(argc, argv);
-	}
-	catch(std::exception &err)
-	{
-		std::wcerr << "\n\nUNHANDELED EXCEPTION: " << err.what() << '\n' << std::endl;
-		_exit(EXIT_FAILURE);
-	}
-	catch(...)
-	{
-		std::wcerr << "\n\nUNHANDELED EXCEPTION: Unknown C++ exception error!\n" << std::endl;
-		_exit(EXIT_FAILURE);
-	}
-	return ret;
-}
-
-int wmain(int argc, wchar_t* argv[])
-{
-	int ret = -1;
-#ifdef NDEBUG
-	__try
-	{
-		setup_error_handlers();
-		ret = wmain_ex(argc, argv);
-	}
-	__except(EXCEPTION_EXECUTE_HANDLER)
-	{
-		std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception error, application will exit!\n" << std::endl;
-	}
-#else
-	ret =  inetget_main(argc, argv);
-#endif
-	return ret;
 }

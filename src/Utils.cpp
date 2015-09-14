@@ -161,22 +161,6 @@ std::wstring status_to_string(const uint32_t &status_code)
 }
 
 //=============================================================================
-// STATUS CODE TO STRING
-//=============================================================================
-
-uint64_t get_system_time(void)
-{
-	FILETIME ftime;
-	GetSystemTimeAsFileTime(&ftime);
-
-	ULARGE_INTEGER time64;
-	time64.HighPart = ftime.dwHighDateTime;
-	time64.LowPart = ftime.dwLowDateTime;
-
-	return time64.QuadPart;
-}
-
-//=============================================================================
 // STRING FORMATTING
 //=============================================================================
 

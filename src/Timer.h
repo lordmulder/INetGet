@@ -22,15 +22,19 @@
 
 #pragma once
 
-#include <string>
 #include <stdint.h>
 
-static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
+class Timer
+{
+public:
+	Timer(void);
+	~Timer(void);
 
-std::wstring &trim(std::wstring &str);
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
-std::wstring status_to_string(const uint32_t &status_code);
-std::wstring bytes_to_string(const double &count);
-std::wstring ticks_to_string(const double &count);
+	void reset(void);
+	double query(void);
+
+private:
+	uint64_t m_reference;
+	const uint64_t m_frequency;
+};
 

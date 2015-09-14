@@ -20,9 +20,11 @@
     <ClCompile Include="src\Sink_File.cpp" />
     <ClCompile Include="src\Sink_Null.cpp" />
     <ClCompile Include="src\Sink_StdOut.cpp" />
+    <ClCompile Include="src\Timer.cpp" />
     <ClCompile Include="src\Types.cpp" />
     <ClCompile Include="src\URL.cpp" />
     <ClCompile Include="src\Utils.cpp" />
+    <ClCompile Include="src\Zero.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Average.h" />
@@ -33,6 +35,7 @@
     <ClInclude Include="src\Sink_File.h" />
     <ClInclude Include="src\Sink_Null.h" />
     <ClInclude Include="src\Sink_StdOut.h" />
+    <ClInclude Include="src\Timer.h" />
     <ClInclude Include="src\Types.h" />
     <ClInclude Include="src\URL.h" />
     <ClInclude Include="src\Utils.h" />
@@ -89,7 +92,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>WinInet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>WinInet.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -111,7 +114,11 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>WinInet.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>EncodePointer.lib;WinInet.lib;Winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\etc;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <LargeAddressAware>true</LargeAddressAware>
+      <SetChecksum>true</SetChecksum>
+      <ImageHasSafeExceptionHandlers>false</ImageHasSafeExceptionHandlers>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
