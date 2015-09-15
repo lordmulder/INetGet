@@ -24,6 +24,8 @@
 
 #include "Types.h"
 
+class URL;
+
 #include <stdint.h>
 #include <string>
 
@@ -36,7 +38,7 @@ public:
 	virtual ~AbstractClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path) = 0;
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::wstring &post_data) = 0;
 	virtual bool close(void) = 0;
 
 	//Fetch result

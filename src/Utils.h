@@ -34,6 +34,7 @@ std::wstring crt_error_string(const int &error_code);
 std::wstring status_to_string(const uint32_t &status_code);
 std::wstring nbytes_to_string(const double &count);
 std::wstring second_to_string(const double &count);
+std::string  wide_str_to_utf8(const std::wstring &str);
 
 #define CHECK_USER_ABORT() do \
 { \

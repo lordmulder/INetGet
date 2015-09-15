@@ -42,4 +42,3 @@ private:
 	std::deque<double> m_values;
 	std::unordered_map<size_t,std::vector<double>> m_weights;
 };
-

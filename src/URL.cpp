@@ -30,16 +30,22 @@
 
 #define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? trim(std::wstring(components.lpsz##X, components.dw##X##Length)) : std::wstring())
 
-URL::URL(void)
+URL::URL(const URL &other)
 :
-	m_iSchemeId(INTERNET_SCHEME_UNKNOWN),
-	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
+	m_iSchemeId(other.m_iSchemeId),
+	m_uiPortNumber(other.m_uiPortNumber)
 {
-	/*nothing to do*/
+	m_strScheme    = other.m_strScheme;
+	m_strHostName  = other.m_strHostName;
+	m_strUserName  = other.m_strUserName;
+	m_strPassword  = other.m_strPassword;
+	m_strUrlPath   = other.m_strUrlPath;
+	m_strExtraInfo = other.m_strExtraInfo;
 }
 
 URL::URL(const std::wstring &url)
 :
+	m_iSchemeId(INTERNET_SCHEME_UNKNOWN),
 	m_uiPortNumber(INTERNET_INVALID_PORT_NUMBER)
 {
 	URL_COMPONENTS components;

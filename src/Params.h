@@ -23,6 +23,7 @@
 #pragma once
 
 #include <string>
+#include "Types.h"
 
 class Params
 {
@@ -35,6 +36,8 @@ public:
 	//Getter
 	inline const std::wstring &getSource      (void) const { return m_strSource;     }
 	inline const std::wstring &getOutput      (void) const { return m_strOutput;     }
+	inline const http_verb_t  &getHttpVerb    (void) const { return m_iHttpVerb;     }
+	inline const std::wstring &getPostData    (void) const { return m_strPostData;   }
 	inline const bool         &getShowHelp    (void) const { return m_bShowHelp;     }
 	inline const bool         &getDisableProxy(void) const { return m_bDisableProxy; }
 	inline const std::wstring &getUserAgent   (void) const { return m_strUserAgent;  }
@@ -45,8 +48,12 @@ private:
 	bool processOption(const std::wstring &option);
 	bool processOption(const std::wstring &option_key, const std::wstring &option_val);
 
+	static http_verb_t parseHttpVerb(const std::wstring &value);
+
 	std::wstring m_strSource;
 	std::wstring m_strOutput;
+	http_verb_t  m_iHttpVerb;
+	std::wstring m_strPostData;
 	bool         m_bShowHelp;
 	bool         m_bDisableProxy;
 	std::wstring m_strUserAgent;

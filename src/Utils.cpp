@@ -232,3 +232,31 @@ std::wstring second_to_string(const double &count)
 
 	return str.str();
 }
+
+//=============================================================================
+// WIDE STRING TO UTF-8
+//=============================================================================
+
+std::string wide_str_to_utf8(const std::wstring &input)
+{
+	std::string result;
+
+	if(!input.empty())
+	{
+		const int buff_size = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, NULL, 0, NULL, NULL);
+		if(buff_size > 0)
+		{
+			if(char *const buffer = (char*) _malloca(sizeof(char) * buff_size))
+			{
+				const int retval = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, buffer, buff_size, NULL, NULL);
+				if((retval > 0) && (retval <= buff_size))
+				{
+					result = std::string(buffer, retval);
+				}
+				_freea(buffer);
+			}
+		}
+	}
+
+	return result;
+}

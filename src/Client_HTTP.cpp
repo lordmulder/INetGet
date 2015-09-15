@@ -23,6 +23,7 @@
 #include "Client_HTTP.h"
 
 //Internal
+#include "URL.h"
 #include "Utils.h"
 
 //Win32
@@ -34,9 +35,16 @@
 #include <stdint.h>
 #include <iostream>
 #include <stdexcept>
+#include <sstream>
 
 //Helper macro
 static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
+static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL : str.c_str(); }
+
+//Const
+static const wchar_t *const HTTP_VER_11      = L"HTTP/1.1";
+static const wchar_t *const ACCEPTED_TYPES[] = { L"*/*", NULL };
+static const wchar_t *const TYPE_FORM_DATA   = L"Content-Type: application/x-www-form-urlencoded";
 
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
@@ -59,7 +67,7 @@ HttpClient::~HttpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool HttpClient::open(const http_verb_t &verb, const bool &secure, const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password, const std::wstring &path)
+bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::wstring &post_data)
 {
 	if(!wininet_init())
 	{
@@ -74,19 +82,20 @@ bool HttpClient::open(const http_verb_t &verb, const bool &secure, const std::ws
 	}
 
 	//Print info
-	std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection to " << hostName << L':' << portNo << ", please wait:" << std::endl;
+	const bool secure = (url.getScheme() == INTERNET_SCHEME_HTTPS);
+	std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection to " << url.getHostName() << L':' << url.getPortNo() << ", please wait:" << std::endl;
 
 	//Reset status
 	m_current_status = UINT32_MAX;
 
 	//Create connection
-	if(!connect(hostName, portNo, userName, password))
+	if(!connect(url.getHostName(), url.getPortNo(), url.getUserName(), url.getPassword()))
 	{
 		return false; /*the connection could not be created*/
 	}
 
 	//Create HTTP request and send!
-	if(!create_request(secure, verb, path))
+	if(!create_request(secure, verb, url.getUrlPath(), url.getExtraInfo(), post_data))
 	{
 		return false; /*the request could not be created or sent*/
 	}
@@ -143,7 +152,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	return true;
 }
 
-bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path)
+bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::wstring &post_data)
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
@@ -153,7 +162,7 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 	}
 
 	//Try to create the HTTP request
-	m_hRequest = HttpOpenRequest(m_hConnection, get_verb(verb), CSTR(path), L"HTTP/1.1", NULL, NULL, flags, intptr_t(this));
+	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, NULL, (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
@@ -161,8 +170,18 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 		return false;
 	}
 
+	//Init post data, if available
+	const std::string post_data_utf8 = post_data.empty() ? std::string() : wide_str_to_utf8(post_data);
+
+	//Prepare headers
+	std::wostringstream headers;
+	if(post_data_utf8.length() > 0)
+	{
+		headers << TYPE_FORM_DATA;
+	}
+
 	//Try to actually send the HTTP request
-	BOOL success = HttpSendRequest(m_hRequest, NULL, 0, NULL, 0);
+	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data_utf8)), post_data_utf8.length());
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
@@ -278,15 +297,13 @@ void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
 } \
 while(0)
 
-const wchar_t *HttpClient::get_verb(const http_verb_t &verb)
+const wchar_t *HttpClient::http_verb_str(const http_verb_t &verb)
 {
 	CHECK_HTTP_VERB(HTTP_GET);
 	CHECK_HTTP_VERB(HTTP_POST);
 	CHECK_HTTP_VERB(HTTP_PUT);
 	CHECK_HTTP_VERB(HTTP_DELETE);
 	CHECK_HTTP_VERB(HTTP_HEAD);
-	CHECK_HTTP_VERB(HTTP_OPTIONS);
-	CHECK_HTTP_VERB(HTTP_TRACE);
 
 	throw new std::runtime_error("Invalid verb specified!");
 }

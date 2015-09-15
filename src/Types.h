@@ -43,7 +43,6 @@ typedef enum
 	HTTP_PUT     = 0x2,
 	HTTP_DELETE  = 0x3,
 	HTTP_HEAD    = 0x4,
-	HTTP_OPTIONS = 0x5,
-	HTTP_TRACE   = 0x6
+	HTTP_UNDEF   = 0xF,
 }
 http_verb_t;

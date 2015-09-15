@@ -28,7 +28,7 @@
 class URL
 {
 public:
-	URL(void);
+	URL(const URL &url);
 	URL(const std::wstring &url);
 	~URL(void);
 
@@ -39,7 +39,7 @@ public:
 	inline const std::wstring &getPassword (void) const { return m_strPassword;  }
 	inline const std::wstring &getUrlPath  (void) const { return m_strUrlPath;   }
 	inline const std::wstring &getExtraInfo(void) const { return m_strExtraInfo; }
-	inline const uint16_t     &getPort     (void) const { return m_uiPortNumber; }
+	inline const uint16_t     &getPortNo   (void) const { return m_uiPortNumber; }
 
 	//Complete?
 	bool isComplete(void) const;

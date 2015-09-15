@@ -55,12 +55,23 @@ while(0)
 } \
 while(0)
 
+#define PARSE_ENUM(X,Y) do \
+{ \
+	static const wchar_t *const name = L#Y; \
+	if(_wcsicmp(value.c_str(), &name[(X)]) == 0) \
+	{ \
+		return (Y); \
+	} \
+} \
+while(0)
+
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
 Params::Params(void)
 :
+	m_iHttpVerb(HTTP_GET),
 	m_bShowHelp(false),
 	m_bDisableProxy(false),
 	m_bVerboseMode(false)
@@ -117,6 +128,12 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 		return false;
 	}
 
+	if((!m_strPostData.empty()) && (m_iHttpVerb != HTTP_POST) && (m_iHttpVerb != HTTP_PUT))
+	{
+		std::wcerr << L"WARNING: Sending 'x-www-form-urlencoded' data, but HTTP verb is not POST/PUT!\n";
+		std::wcerr << L"         You probably want to add the \"--verb=post\" or \"--verb=put\" argument.\n" << std::endl;
+	}
+
 	return true;
 }
 
@@ -131,7 +148,7 @@ bool Params::processParamN(const size_t n, const std::wstring &param)
 		m_strOutput = param;
 		return true;
 	default:
-		std::wcerr << L"ERROR: Excess parameter \"" << param << L"\" encountered!\n" << std::endl;
+		std::wcerr << L"ERROR: Excess argument \"" << param << L"\" encountered!\n" << std::endl;
 		return false;
 	}
 }
@@ -166,6 +183,17 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 		ENSURE_NOVAL();
 		return (m_bShowHelp = true);
 	}
+	else if(IS_OPTION("verb"))
+	{
+		ENSURE_VALUE();
+		return (HTTP_UNDEF != (m_iHttpVerb = parseHttpVerb(option_val)));
+	}
+	else if(IS_OPTION("data"))
+	{
+		ENSURE_VALUE();
+		m_strPostData = option_val;
+		return true;
+	}
 	else if(IS_OPTION("no-proxy"))
 	{
 		ENSURE_NOVAL();
@@ -185,4 +213,16 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 
 	std::wcerr << L"ERROR: Unknown option \"--" << option_key << "\" encountered!\n" << std::endl;
 	return false;
+}
+
+http_verb_t Params::parseHttpVerb(const std::wstring &value)
+{
+	PARSE_ENUM(5, HTTP_GET);
+	PARSE_ENUM(5, HTTP_POST);
+	PARSE_ENUM(5, HTTP_PUT);
+	PARSE_ENUM(5, HTTP_DELETE);
+	PARSE_ENUM(5, HTTP_HEAD);
+
+	std::wcerr << L"ERROR: Unknown HTTP method \"" << value << "\" encountered!\n" << std::endl;
+	return HTTP_UNDEF;
 }
