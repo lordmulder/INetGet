@@ -1,4 +1,4 @@
-# INetGet - Lightweight front-end to the WinInet API #
+# INetGet - Lightweight CLI front-end to the WinInet API #
 
 Please visit <http://muldersoft.com/> for news and updates!
 
@@ -9,7 +9,7 @@ Please visit <http://muldersoft.com/> for news and updates!
 
 This program provides a similar functionality as the well-known [*WGet*](http://www.gnu.org/software/wget/) and [*cURL*](http://curl.haxx.se/) tools. However, in contrast to those, *INetGet* is based directly on the "native" Windows Internet programming interface ([*WinINet*](https://msdn.microsoft.com/en-us/library/windows/desktop/aa385483%28v=vs.85%29.aspx)). This comes at the advantage that *INetGet* is very small and lightweight, as it uses the HTTP(S) and FTP services provided by the operating system, instead of having to implement these protocols on its own. There are **no** external dependencies (e.g. OpenSSL or GnuTLS), except for standard system libraries that are present on *every* Windows system anyway. Still, advanced features, such as HTTPS and IPv6, are supported. Furthermore, since *INetGet* is based on the Windows crypto libraries, it uses the Windows *certificate store*. This means that, in contrast the aforementioned tools, you do **not** need to provide and maintain your own certificate bundle for HTTPS. Certificate updates as well as security fixes for the underlying cryptographic routines are automatically provided, via  Windows Update. On the downside, you will have to trust Microsoft's protocol implementations. And the availability of some features depends on the Windows version.
 
-See here for more details:
+See here for more details:  
 <http://blogs.technet.com/b/askperf/archive/2007/08/21/under-the-hood-wininet.aspx>
 
 
@@ -21,7 +21,7 @@ INetGet works on Windows Vista or any later Windows version. Windows XP should w
 
 As far as HTTPS support is concerned, all relevant Windows versions (XP or later) support TLS 1.0 as well as the deprecated SSL 2.0 and SSL 3.0 protocols. Support for TLS 1.1 has finally been introduced in Windows 7. And support for TLS 1.2 has been introduced in Windows 8.
 
-See here for more details:
+See here for more details:  
 <http://blogs.msdn.com/b/kaushal/archive/2011/10/02/support-for-ssl-tls-protocols-on-windows.aspx>
 
 
@@ -65,7 +65,7 @@ The following *required* parameters must always be included:
 	along with this program; if not, write to the Free Software
 	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-**See also:**
+**See also:**  
 <http://www.gnu.org/licenses/gpl-2.0-standalone.html>
 
 &nbsp;
