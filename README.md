@@ -35,20 +35,66 @@ The basic *command-line syntax* of INetGet is extremely simple:
 
 The following *required* parameters must always be included:
 
-* **`<target_address>`**
+* **`<target_address>`**  
   Specifies the target *Internet address* (URL) to be downloaded. The URL must be in the ``<scheme>://<username>:<password>@<hostname>:<port>/<path>?<query>`` format.
   The *scheme* (protocol), *hostname* and *path* must always be specified. The *username* and *password* as well as the *port* number and the *query* string are optional.
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
   If the *port* number is absent, a default port number will be assumed. This means port #21 for FTP, port #80 for HTTP and port #443 for HTTPS. The *path* may be a single `/` character.
 
-* **`<output_file>`**
+* **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
   The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, it program will try to *overwrite* the existing file!
   The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``null`` may be specified in order to discard all data that is received.
 
+### Options ###
+
+The following options *may* be included, in an arbitrary order:
+
+* **`--verb=<verb>`**  
+  Specifies the HTTP [*method*](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods) (also called &ldquo;verb&rdquo;) to be used in the HTTP request. This can be one of the standard methods `GET`, `POST`, `PUT`, `DELETE` or `HEAD`. By default, the `GET` method is used.
+
+* **`--data=<data>`**  
+  Append additional data to the HTTP request. The given data is expected to be in the [*application/x-www-form-urlencoded*](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1) format, i.e. the standard format that used by HTML forms.
+  You can specify `-` as the argument in order to read the data from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. Note that you probably want to specify either `--verb=POST` or `--verb=PUT` too when using *this* option.
+
+* **`--no-proxy`**  
+  Instructs the WinINet API to resolve the host name *locally*, i.e. **not** use a proxy server. If this option is absent, the system's default *proxy server* settings will be used to resolve the host name.
+
+* **`--agent=<str>`**  
+  Overwrite the default [*user agent*](https://en.wikipedia.org/wiki/User_agent#User_agent_identification) string that will be sent by INetGet in the HTTP request. This string typically starts with the `Mozilla/5.0` prefix, followed by system and program information.
+
+* **`--verbose`**  
+  Enables verbose logging, i.e. writes additional status information to the console. This is intended for debugging purposes and does *not* normally need to be specified.
+
+* **`--help`**  
+  If this option present, INetGet will print the "help screen" to the console and then exit immediately.
+
+### Exit Codes ###
+
+If the download completed successfully, INetGet returns a *zero* (`0`) exit code. Otherwise, if something went wrong (connection to server failed, file not found, etc), it return a *non-zero* (`1`) error code.
+
+Note that only HTTP [*status codes*](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) in the `2xx` range will be considered a successful transfer. If the server returns a different status code, e.g. in the `4xx` or `5xx` range, the transfer has failed.
+
+### Examples ###
+
+Here are some basic examples that show the command-line usage of INetGet:
+
+* Download a simple HTML document:  
+ `INetGet.exe http://www.warr.org/buckethead.html output.html`
+
+* Get search results from Google:
+  `INetGet.exe http://www.google.de/search?q=drunkship+of+lanterns output.html`
+
+* Post some form data and save the result:
+  `INetGet.exe --verb=POST --data="foo=hello&bar=world" http://muldersoft.sourceforge.net/test.php output.txt`
+
+* Request with login and port number:
+  `INetGet.exe http://allis:jelly22fi$h@localhost:8080/secret.html output.html`
+
+
 ## License ##
 
-**INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**
+**INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
 **This software is released under the GNU General Public License (&ldquo;GPL&rdquo;), version 2.**
 
 	This program is free software; you can redistribute it and/or
