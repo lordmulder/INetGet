@@ -1,0 +1,73 @@
+# INetGet - Lightweight front-end to the WinInet API #
+
+Please visit <http://muldersoft.com/> for news and updates!
+
+
+## Introduction ##
+
+**INetGet** is a simple command-line program for downloading files via the [*HTTP*](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) (Hypertext Transfer Protocol) or [*FTP*](https://en.wikipedia.org/wiki/File_Transfer_Protocol) (File Transfer Protocol) protocols. It provides full support for [*HTTPS*](https://en.wikipedia.org/wiki/HTTPS) (HTTP over TLS) as well as [*IPv6*](https://en.wikipedia.org/wiki/IPv6).
+
+This program provides a similar functionality as the well-known [*WGet*](http://www.gnu.org/software/wget/) and [*cURL*](http://curl.haxx.se/) tools. However, in contrast to those, *INetGet* is based directly on the "native" Windows Internet programming interface ([*WinINet*](https://msdn.microsoft.com/en-us/library/windows/desktop/aa385483%28v=vs.85%29.aspx)). This comes at the advantage that *INetGet* is very small and lightweight, as it uses the HTTP(S) and FTP services provided by the operating system, instead of having to implement these protocols on its own. There are **no** external dependencies (e.g. OpenSSL or GnuTLS), except for standard system libraries that are present on *every* Windows system anyway. Still, advanced features, such as HTTPS and IPv6, are supported. Furthermore, since *INetGet* is based on the Windows crypto libraries, it uses the Windows *certificate store*. This means that, in contrast the aforementioned tools, you do **not** need to provide and maintain your own certificate bundle for HTTPS. Certificate updates as well as security fixes for the underlying cryptographic routines are automatically provided, via  Windows Update. On the downside, you will have to trust Microsoft's protocol implementations. And the availability of some features depends on the Windows version.
+
+See here for more details:
+<http://blogs.technet.com/b/askperf/archive/2007/08/21/under-the-hood-wininet.aspx>
+
+
+## System Requirements ##
+
+INetGet works on Windows Vista or any later Windows version. Windows XP should work too, but is **not** recommended these days! The 32-Bit version of INetGet runs on all 32-Bit *and* 64-Bit Windows versions, while the 64-Bit version of INetGet requires a 64-Bit Windows version. 
+
+*IPv6* support requires Internet Explorer 7 or later. Note that all supported Windows versions (Vista or later) already meet this requirement. Windows XP requires manual update to IE7 in order to enable IPv6 support.
+
+As far as HTTPS support is concerned, all relevant Windows versions (XP or later) support TLS 1.0 as well as the deprecated SSL 2.0 and SSL 3.0 protocols. Support for TLS 1.1 has finally been introduced in Windows 7. And support for TLS 1.2 has been introduced in Windows 8.
+
+See here for more details:
+<http://blogs.msdn.com/b/kaushal/archive/2011/10/02/support-for-ssl-tls-protocols-on-windows.aspx>
+
+
+## Command-Line Usage ##
+
+The basic *command-line syntax* of INetGet is extremely simple:
+
+	INetGet.exe [options] <target_address> <output_file>
+
+### Parameters ###
+
+The following *required* parameters must always be included:
+
+* **`<target_address>`**
+  Specifies the target *Internet address* (URL) to be downloaded. The URL must be in the ``<scheme>://<username>:<password>@<hostname>:<port>/<path>?<query>`` format.
+  The *scheme* (protocol), *hostname* and *path* must always be specified. The *username* and *password* as well as the *port* number and the *query* string are optional.
+  Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
+  If the *port* number is absent, a default port number will be assumed. This means port #21 for FTP, port #80 for HTTP and port #443 for HTTPS. The *path* may be a single `/` character.
+
+* **`<output_file>`**
+  Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
+  The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, it program will try to *overwrite* the existing file!
+  The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``null`` may be specified in order to discard all data that is received.
+
+## License ##
+
+**INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**
+**This software is released under the GNU General Public License (&ldquo;GPL&rdquo;), version 2.**
+
+	This program is free software; you can redistribute it and/or
+	modify it under the terms of the GNU General Public License
+	as published by the Free Software Foundation; either version 2
+	of the License, or (at your option) any later version.
+	
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
+	
+	You should have received a copy of the GNU General Public License
+	along with this program; if not, write to the Free Software
+	Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+**See also:**
+<http://www.gnu.org/licenses/gpl-2.0-standalone.html>
+
+&nbsp;
+
+**e.o.f.**
