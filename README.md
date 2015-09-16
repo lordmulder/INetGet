@@ -43,7 +43,7 @@ The following *required* parameters must always be included:
 
 * **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
-  The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, it program will try to *overwrite* the existing file!
+  The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, the program will try to *overwrite* the existing file!
   The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``null`` may be specified in order to discard all data that is received.
 
 ### Options ###
@@ -89,7 +89,7 @@ Here are some basic examples that show the command-line usage of INetGet:
   `INetGet.exe --verb=POST --data="foo=hello&bar=world" http://muldersoft.sourceforge.net/test.php output.txt`
 
 * Request with login and port number:  
-  `INetGet.exe http://allis:jelly22fi$h@localhost:8080/secret.html output.html`
+  `INetGet.exe http://alice:jelly22fi$h@localhost:8080/secret.html output.html`
 
 
 ## License ##
