@@ -67,7 +67,7 @@ HttpClient::~HttpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::wstring &post_data)
+bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data)
 {
 	if(!wininet_init())
 	{
@@ -152,7 +152,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	return true;
 }
 
-bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::wstring &post_data)
+bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data)
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
@@ -170,18 +170,15 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 		return false;
 	}
 
-	//Init post data, if available
-	const std::string post_data_utf8 = post_data.empty() ? std::string() : wide_str_to_utf8(post_data);
-
 	//Prepare headers
 	std::wostringstream headers;
-	if(post_data_utf8.length() > 0)
+	if(post_data.length() > 0)
 	{
 		headers << TYPE_FORM_DATA;
 	}
 
 	//Try to actually send the HTTP request
-	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data_utf8)), post_data_utf8.length());
+	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data)), post_data.length());
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();

@@ -88,6 +88,7 @@ static int inetget_startup(const int argc, const wchar_t *const argv[])
 {
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
+	_setmode(_fileno(stdin ), _O_BINARY);
 	timeBeginPeriod(1);
 	SetConsoleCtrlHandler(my_sigint_handler, TRUE);
 	return inetget_main(argc, argv);

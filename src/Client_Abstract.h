@@ -38,7 +38,7 @@ public:
 	virtual ~AbstractClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::wstring &post_data) = 0;
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data) = 0;
 	virtual bool close(void) = 0;
 
 	//Fetch result

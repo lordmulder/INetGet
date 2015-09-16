@@ -67,7 +67,7 @@ The following options *may* be included, in an arbitrary order:
   Enables verbose logging, i.e. writes additional status information to the console. This is intended for debugging purposes and does *not* normally need to be specified.
 
 * **`--help`**  
-  If this option present, INetGet will print the "help screen" to the console and then exit immediately.
+  If this option is set, INetGet will print the "help screen" to the console and then exit immediately.
 
 ### Exit Codes ###
 

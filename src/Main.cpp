@@ -273,8 +273,22 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName)
 {
+	//Initialize the post data string
+	std::string post_data_utf8;
+	if(!post_data.empty())
+	{
+		if(post_data.compare(L"-") != 0)
+		{
+			post_data_utf8 = wide_str_to_utf8(post_data);
+		}
+		else
+		{
+			std::getline(std::cin, post_data_utf8);
+		}
+	}
+
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data))
+	if(!client->open(http_verb, url, post_data_utf8))
 	{
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
 		return EXIT_FAILURE;
