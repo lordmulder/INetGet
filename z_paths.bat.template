@@ -1,0 +1,2 @@
+@echo off
+set "INETGET_PANDOC_PATH=D:\Pandoc"

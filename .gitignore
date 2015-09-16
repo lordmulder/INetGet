@@ -1,6 +1,8 @@
 /bin
 /obj
+z_paths.bat
 *.sdf
 *.suo
 *.opensdf
 *.user
+*.local.*
