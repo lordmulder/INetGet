@@ -51,7 +51,7 @@ The following *required* parameters must always be included:
 The following options *may* be included, in an arbitrary order:
 
 * **`--verb=<verb>`**  
-  Specifies the HTTP [*method*](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods) (also called &ldquo;verb&rdquo;) to be used in the HTTP request. This can be one of the standard methods `GET`, `POST`, `PUT`, `DELETE` or `HEAD`. By default, the `GET` method is used.
+  Specifies the HTTP [*method*](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol#Request_methods) (alias &ldquo;verb&rdquo;) to be used in the HTTP request. This can be one of the standard methods `GET`, `POST`, `PUT`, `DELETE` or `HEAD`. By default, the `GET` method is used.
 
 * **`--data=<data>`**  
   Append additional data to the HTTP request. The given data is expected to be in the [*application/x-www-form-urlencoded*](http://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.1) format, i.e. the standard format that used by HTML forms.
@@ -82,13 +82,13 @@ Here are some basic examples that show the command-line usage of INetGet:
 * Download a simple HTML document:  
  `INetGet.exe http://www.warr.org/buckethead.html output.html`
 
-* Get search results from Google:
+* Get search results from Google:  
   `INetGet.exe http://www.google.de/search?q=drunkship+of+lanterns output.html`
 
-* Post some form data and save the result:
+* Post some form data and save the result:  
   `INetGet.exe --verb=POST --data="foo=hello&bar=world" http://muldersoft.sourceforge.net/test.php output.txt`
 
-* Request with login and port number:
+* Request with login and port number:  
   `INetGet.exe http://allis:jelly22fi$h@localhost:8080/secret.html output.html`
 
 
