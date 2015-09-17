@@ -37,7 +37,7 @@
 #include <stdexcept>
 #include <sstream>
 
-//Helper macro
+//Helper functions
 static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
 static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL : str.c_str(); }
 
@@ -45,6 +45,13 @@ static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL 
 static const wchar_t *const HTTP_VER_11      = L"HTTP/1.1";
 static const wchar_t *const ACCEPTED_TYPES[] = { L"*/*", NULL };
 static const wchar_t *const TYPE_FORM_DATA   = L"Content-Type: application/x-www-form-urlencoded";
+
+//Macros
+#define OPTIONAL_FLAG(X,Y,Z) do \
+{ \
+	if((Y)) { (X) |= (Z); } \
+} \
+while(0)
 
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
@@ -67,7 +74,7 @@ HttpClient::~HttpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data)
+bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const bool &no_redir, const bool &insecure)
 {
 	if(!wininet_init())
 	{
@@ -82,8 +89,8 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	}
 
 	//Print info
-	const bool secure = (url.getScheme() == INTERNET_SCHEME_HTTPS);
-	std::wcerr << L"Creating " << (secure ? L"HTTPS" : L"HTTP") << " connection to " << url.getHostName() << L':' << url.getPortNo() << ", please wait:" << std::endl;
+	const bool use_tls = (url.getScheme() == INTERNET_SCHEME_HTTPS);
+	std::wcerr << L"Creating " << (use_tls ? L"HTTPS" : L"HTTP") << " connection to " << url.getHostName() << L':' << url.getPortNo() << ", please wait:" << std::endl;
 
 	//Reset status
 	m_current_status = UINT32_MAX;
@@ -95,7 +102,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	}
 
 	//Create HTTP request and send!
-	if(!create_request(secure, verb, url.getUrlPath(), url.getExtraInfo(), post_data))
+	if(!create_request(use_tls, verb, url.getUrlPath(), url.getExtraInfo(), post_data, no_redir, insecure))
 	{
 		return false; /*the request could not be created or sent*/
 	}
@@ -152,14 +159,14 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	return true;
 }
 
-bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data)
+bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const bool &no_redir, const bool &no_validate)
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
-	if(secure)
-	{
-		flags |= INTERNET_FLAG_SECURE;
-	}
+	OPTIONAL_FLAG(flags, use_tls,        INTERNET_FLAG_SECURE);
+	OPTIONAL_FLAG(flags, no_validate,    INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID);
+	OPTIONAL_FLAG(flags, no_redir,       INTERNET_FLAG_NO_AUTO_REDIRECT);
+	OPTIONAL_FLAG(flags, m_disableProxy, INTERNET_FLAG_PRAGMA_NOCACHE);
 
 	//Try to create the HTTP request
 	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, NULL, (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
@@ -168,6 +175,16 @@ bool HttpClient::create_request(const bool &secure, const http_verb_t &verb, con
 		const DWORD error_code = GetLastError();
 		std::wcerr << "--> Failed!\n\nHttpOpenRequest() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
+	}
+
+	//Update the security flags, if required
+	if(no_validate)
+	{
+		static const DWORD insecure_flags = SECURITY_FLAG_IGNORE_REVOCATION | SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_WRONG_USAGE;
+		if(!update_security_flags(m_hRequest, insecure_flags))
+		{
+			return false; /*updating the flags failed!*/
+		}
 	}
 
 	//Prepare headers
@@ -303,6 +320,29 @@ const wchar_t *HttpClient::http_verb_str(const http_verb_t &verb)
 	CHECK_HTTP_VERB(HTTP_HEAD);
 
 	throw new std::runtime_error("Invalid verb specified!");
+}
+
+bool HttpClient::update_security_flags(void *const requets, const uint32_t &new_flags)
+{
+	DWORD security_flags = 0, buff_len = sizeof(DWORD);
+	if(InternetQueryOption(requets, INTERNET_OPTION_SECURITY_FLAGS, (LPVOID)&security_flags, &buff_len))
+	{
+		security_flags |= new_flags;
+		if(!InternetSetOption(requets, INTERNET_OPTION_SECURITY_FLAGS, (LPVOID)&security_flags, buff_len))
+		{
+			const DWORD error_code = GetLastError();
+			std::wcerr << "--> Failed!\n\nInternetSetOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+			return false;
+		}
+	}
+	else
+	{
+		const DWORD error_code = GetLastError();
+		std::wcerr << "--> Failed!\n\nInternetQueryOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		return false;
+	}
+
+	return true;
 }
 
 bool HttpClient::get_header_int(void *const request, const uint32_t type, uint32_t &value)

@@ -34,14 +34,16 @@ public:
 	bool initialize(const int argc, const wchar_t *const argv[]);
 
 	//Getter
-	inline const std::wstring &getSource      (void) const { return m_strSource;     }
-	inline const std::wstring &getOutput      (void) const { return m_strOutput;     }
-	inline const http_verb_t  &getHttpVerb    (void) const { return m_iHttpVerb;     }
-	inline const std::wstring &getPostData    (void) const { return m_strPostData;   }
-	inline const bool         &getShowHelp    (void) const { return m_bShowHelp;     }
-	inline const bool         &getDisableProxy(void) const { return m_bDisableProxy; }
-	inline const std::wstring &getUserAgent   (void) const { return m_strUserAgent;  }
-	inline const bool         &getVerboseMode (void) const { return m_bVerboseMode;  }
+	inline const std::wstring &getSource       (void) const { return m_strSource;     }
+	inline const std::wstring &getOutput       (void) const { return m_strOutput;     }
+	inline const http_verb_t  &getHttpVerb     (void) const { return m_iHttpVerb;     }
+	inline const std::wstring &getPostData     (void) const { return m_strPostData;   }
+	inline const bool         &getShowHelp     (void) const { return m_bShowHelp;     }
+	inline const bool         &getDisableProxy (void) const { return m_bDisableProxy; }
+	inline const std::wstring &getUserAgent    (void) const { return m_strUserAgent;  }
+	inline const bool         &getDisableRedir (void) const { return m_bDisableRedir; }
+	inline const bool         &getInsecure     (void) const { return m_bInsecure;     }
+	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
 
 private:
 	bool processParamN(const size_t n, const std::wstring &param);
@@ -57,6 +59,8 @@ private:
 	bool         m_bShowHelp;
 	bool         m_bDisableProxy;
 	std::wstring m_strUserAgent;
+	bool         m_bDisableRedir;
+	bool         m_bInsecure;
 	bool         m_bVerboseMode;
 };
 

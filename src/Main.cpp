@@ -96,6 +96,8 @@ static void print_help_screen(void)
 		<< L"  --data=<data> : Append data to request, in 'x-www-form-urlencoded' format\n"
 		<< L"  --no-proxy    : Don't use proxy server for address resolution\n"
 		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
+		<< L"  --no-redir    : Disable automatic redirection, enabled by default\n"
+		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L"  --help        : Show this help screen\n"
 		<< std::endl;
@@ -278,13 +280,13 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName)
+static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName, const bool &no_redir, const bool &insecure)
 {
 	//Initialize the post data string
 	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
 
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data_utf8))
+	if(!client->open(http_verb, url, post_data_utf8, no_redir, insecure))
 	{
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
 		return EXIT_FAILURE;
@@ -364,5 +366,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getOutput());
+	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getOutput(), params.getDisableRedir(), params.getInsecure());
 }

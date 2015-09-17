@@ -32,7 +32,7 @@ public:
 	virtual ~HttpClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data);
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const bool &no_redir, const bool &insecure);
 	virtual bool close(void);
 
 	//Fetch result
@@ -44,13 +44,14 @@ public:
 private:
 	//Create connection/request
 	bool connect(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
-	bool create_request(const bool &secure, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data);
+	bool create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const bool &no_redir, const bool &insecure);
 
 	//Status handler
 	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
 	//Utilities
 	static const wchar_t *http_verb_str(const http_verb_t &verb);
+	static bool update_security_flags(void *const requets, const uint32_t &new_flags);
 	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
 	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
 

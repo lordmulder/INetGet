@@ -74,6 +74,8 @@ Params::Params(void)
 	m_iHttpVerb(HTTP_GET),
 	m_bShowHelp(false),
 	m_bDisableProxy(false),
+	m_bDisableRedir(false),
+	m_bInsecure(false),
 	m_bVerboseMode(false)
 {
 }
@@ -124,6 +126,10 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 
 	if(!(m_bShowHelp || (argCounter >= 2)))
 	{
+		if((argc >= 2) && (!_wcsicmp(argv[1], L"-h") || !_wcsicmp(argv[1], L"/?")))
+		{
+			return (m_bShowHelp = true);
+		}
 		std::wcerr << L"ERROR: Required parameter is missing!\n" << std::endl;
 		return false;
 	}
@@ -204,6 +210,16 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 		ENSURE_VALUE();
 		m_strUserAgent = option_val;
 		return true;
+	}
+	else if(IS_OPTION("no-redir"))
+	{
+		ENSURE_NOVAL();
+		return (m_bDisableRedir = true);
+	}
+	else if(IS_OPTION("insecure"))
+	{
+		ENSURE_NOVAL();
+		return (m_bInsecure = true);
 	}
 	else if(IS_OPTION("verbose"))
 	{
