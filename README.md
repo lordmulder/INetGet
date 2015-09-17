@@ -7,6 +7,8 @@ Please visit <http://muldersoft.com/> for news and updates!
 
 **INetGet** is a simple command-line program for downloading files via the [*HTTP*](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol) (Hypertext Transfer Protocol) or [*FTP*](https://en.wikipedia.org/wiki/File_Transfer_Protocol) (File Transfer Protocol) protocols. It provides full support for [*HTTPS*](https://en.wikipedia.org/wiki/HTTPS) (HTTP over TLS) as well as [*IPv6*](https://en.wikipedia.org/wiki/IPv6).
 
+![](img/inetget/inetget.png)
+
 This program provides a similar functionality as the well-known [*WGet*](http://www.gnu.org/software/wget/) and [*cURL*](http://curl.haxx.se/) tools. However, in contrast to those, *INetGet* is based directly on the "native" Windows Internet programming interface ([*WinINet*](https://msdn.microsoft.com/en-us/library/windows/desktop/aa385483%28v=vs.85%29.aspx)). This comes at the advantage that *INetGet* is very small and lightweight, as it uses the HTTP(S) and FTP services provided by the operating system, instead of having to implement these protocols on its own. There are **no** external dependencies (e.g. OpenSSL or GnuTLS), except for standard system libraries that are present on *every* Windows system anyway. Still, advanced features, such as HTTPS and IPv6, are supported. Furthermore, since *INetGet* is based on the Windows crypto libraries, it uses the Windows *certificate store*. This means that, in contrast the aforementioned tools, you do **not** need to provide and maintain your own certificate bundle for HTTPS. Certificate updates as well as security fixes for the underlying cryptographic routines are automatically provided, via  Windows Update. On the downside, you will have to trust Microsoft's protocol implementations. And the availability of some features depends on the Windows version.
 
 See here for more details:  
@@ -40,6 +42,7 @@ The following *required* parameters must always be included:
   The *scheme* (protocol), *hostname* and *path* must always be specified. The *username* and *password* as well as the *port* number and the *query* string are optional.
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
   If the *port* number is absent, a default port number will be assumed. This means port #21 for FTP, port #80 for HTTP and port #443 for HTTPS. The *path* may be a single `/` character.
+  The special string name ``-`` may be specified in order to read the target URL from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in UTF-8 encoding.
 
 * **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
@@ -82,14 +85,17 @@ Here are some basic examples that show the command-line usage of INetGet:
 * Download a simple HTML document:  
  `INetGet.exe http://www.warr.org/buckethead.html output.html`
 
-* Get search results from Google:  
+* Send request with query string:  
   `INetGet.exe http://www.google.de/search?q=drunkship+of+lanterns output.html`
 
-* Post some form data and save the result:  
+* Send request with "POST" method and form data included:  
   `INetGet.exe --verb=POST --data="foo=hello&bar=world" http://muldersoft.sourceforge.net/test.php output.txt`
 
-* Request with login and port number:  
+* Request with user login and port number specified:  
   `INetGet.exe http://alice:jelly22fi$h@localhost:8080/secret.html output.html`
+
+* Read the URL from *stdin* and write the response to *stout*:  
+  `echo http://www.warr.org/buckethead.html | INetGet.exe - - | findstr Sacrifist`
 
 
 ## License ##

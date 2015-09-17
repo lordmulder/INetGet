@@ -29,12 +29,16 @@ extern volatile bool g_userAbortFlag;
 static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 std::wstring &trim(std::wstring &str);
+
 std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int &error_code);
-std::wstring status_to_string(const uint32_t &status_code);
+std::wstring crt_error_string(const int      &error_code);
+std::wstring status_to_string(const uint32_t &rspns_code);
+
 std::wstring nbytes_to_string(const double &count);
 std::wstring second_to_string(const double &count);
-std::string  wide_str_to_utf8(const std::wstring &str);
+
+std::string wide_str_to_utf8(const std::wstring &str);
+std::wstring utf8_to_wide_str(const std::string &str);
 
 #define CHECK_USER_ABORT() do \
 { \

@@ -148,11 +148,11 @@ std::wstring crt_error_string(const int &error_code)
 // STATUS CODE TO STRING
 //=============================================================================
 
-std::wstring status_to_string(const uint32_t &status_code)
+std::wstring status_to_string(const uint32_t &rspns_code)
 {
 	for(size_t i = 0; STATUS_CODES[i].info; i++)
 	{
-		if(STATUS_CODES[i].code == status_code)
+		if(STATUS_CODES[i].code == rspns_code)
 		{
 			return std::wstring(STATUS_CODES[i].info);
 		}
@@ -234,7 +234,7 @@ std::wstring second_to_string(const double &count)
 }
 
 //=============================================================================
-// WIDE STRING TO UTF-8
+// WIDE STRING <--> UTF-8 STRING
 //=============================================================================
 
 std::string wide_str_to_utf8(const std::wstring &input)
@@ -251,7 +251,31 @@ std::string wide_str_to_utf8(const std::wstring &input)
 				const int retval = WideCharToMultiByte(CP_UTF8, 0, input.c_str(), -1, buffer, buff_size, NULL, NULL);
 				if((retval > 0) && (retval <= buff_size))
 				{
-					result = std::string(buffer, retval);
+					result = std::string(buffer);
+				}
+				_freea(buffer);
+			}
+		}
+	}
+
+	return result;
+}
+
+std::wstring utf8_to_wide_str(const std::string &input)
+{
+	std::wstring result;
+
+	if(!input.empty())
+	{
+		const int buff_size = MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1, NULL, 0);
+		if(buff_size > 0)
+		{
+			if(wchar_t *const buffer = (wchar_t*) _malloca(sizeof(wchar_t) * buff_size))
+			{
+				const int retval = MultiByteToWideChar(CP_UTF8, 0, input.c_str(), -1, buffer, buff_size);
+				if((retval > 0) && (retval <= buff_size))
+				{
+					result = std::wstring(buffer);
 				}
 				_freea(buffer);
 			}

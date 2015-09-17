@@ -51,6 +51,13 @@
 // INTERNAL FUNCTIONS
 //=============================================================================
 
+static std::string stdin_get_line(void)
+{
+	std::string line;
+	std::getline(std::cin, line);
+	return line;
+}
+
 static std::wstring build_version_string(void)
 {
 	std::wostringstream str;
@@ -274,18 +281,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName)
 {
 	//Initialize the post data string
-	std::string post_data_utf8;
-	if(!post_data.empty())
-	{
-		if(post_data.compare(L"-") != 0)
-		{
-			post_data_utf8 = wide_str_to_utf8(post_data);
-		}
-		else
-		{
-			std::getline(std::cin, post_data_utf8);
-		}
-	}
+	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
 
 	//Create the HTTPS connection/request
 	if(!client->open(http_verb, url, post_data_utf8))
@@ -348,15 +344,16 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Parse the specified source URL
-	URL url(params.getSource());
+	const std::wstring source = (params.getSource().compare(L"-") == 0) ? utf8_to_wide_str(stdin_get_line()) : params.getSource();
+	URL url(source);
 	if(!url.isComplete())
 	{
-		std::wcerr << "The specified URL is incomplete or unsupported:\n" << params.getSource() << L'\n' << std::endl;
+		std::wcerr << "The specified URL is incomplete or unsupported:\n" << source << L'\n' << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Print request URL
-	std::wcerr << L"Request address:\n" << params.getSource() << L'\n' << std::endl;
+	std::wcerr << L"Request address:\n" << source << L'\n' << std::endl;
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;
