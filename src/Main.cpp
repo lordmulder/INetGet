@@ -84,7 +84,10 @@ static void print_logo(void)
 static void print_help_screen(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr << L"Usage:\n"
+	std::wcerr
+		<< L"Check http://muldersoft.com/ or https://github.com/lordmulder/ for updates!\n"
+		<< L'\n'
+		<< L"Usage:\n"
 		<< L"  INetGet.exe [options] <source_addr> <output_file>\n"
 		<< L'\n'
 		<< L"Required:\n"
@@ -98,8 +101,13 @@ static void print_help_screen(void)
 		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
 		<< L"  --no-redir    : Disable automatic redirection, enabled by default\n"
 		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
-		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
+		<< L"  --notify      : Trigger a system sound when the download completed/failed\n"
 		<< L"  --help        : Show this help screen\n"
+		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
+		<< L'\n'
+		<< L"Examples:\n"
+		<< L"  INetGet.exe http://www.warr.org/buckethead.html output.html\n"
+		<< L"  INetGet.exe --verb=POST --data=\"foo=bar\" http://localhost/form.php result\n"
 		<< std::endl;
 	std::wcout.flags(stateBackup);
 }
@@ -207,12 +215,13 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 // PROCESS
 //=============================================================================
 
-static int transfer_file(AbstractClient *const client, const uint64_t &file_size, const std::wstring &outFileName)
+static int transfer_file(AbstractClient *const client, const uint64_t &file_size, const std::wstring &outFileName, const bool &alert)
 {
 	//Open output file
 	std::unique_ptr<AbstractSink> sink;
 	if(!create_sink(sink, outFileName))
 	{
+		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -241,6 +250,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 		CHECK_USER_ABORT();
 		if(!client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
 		{
+			TRIGGER_SYSTEM_SOUND(alert, false);
 			std::wcerr << "ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
@@ -261,6 +271,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 			if(!sink->write(buffer.get(), bytes_read))
 			{
+				TRIGGER_SYSTEM_SOUND(alert, false);
 				std::wcerr << "ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
 				return EXIT_FAILURE;
 			}
@@ -276,11 +287,12 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
 	sink->close();
 
+	TRIGGER_SYSTEM_SOUND(alert, true);
 	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? second_to_string(total_time) : L"no time") << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName, const bool &no_redir, const bool &insecure)
+static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName, const bool &no_redir, const bool &insecure, const bool &alert)
 {
 	//Initialize the post data string
 	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
@@ -288,6 +300,7 @@ static int retrieve_url(AbstractClient *const client, const http_verb_t &http_ve
 	//Create the HTTPS connection/request
 	if(!client->open(http_verb, url, post_data_utf8, no_redir, insecure))
 	{
+		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -302,6 +315,7 @@ static int retrieve_url(AbstractClient *const client, const http_verb_t &http_ve
 	CHECK_USER_ABORT();
 	if(!client->result(success, status_code, file_size, content_type, content_encd))
 	{
+		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -313,12 +327,13 @@ static int retrieve_url(AbstractClient *const client, const http_verb_t &http_ve
 	//Request successful?
 	if(!success)
 	{
+		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The server failed to handle this request! [Status " << status_code << "]\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(client, file_size, outFileName);
+	return transfer_file(client, file_size, outFileName, alert);
 }
 
 //=============================================================================
@@ -366,5 +381,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getOutput(), params.getDisableRedir(), params.getInsecure());
+	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getOutput(), params.getDisableRedir(), params.getInsecure(), params.getEnableAlert());
 }

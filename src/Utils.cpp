@@ -33,6 +33,7 @@
 //Win32
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
+#include <MMSystem.h>
 
 //=============================================================================
 // TRIM STRING
@@ -283,4 +284,13 @@ std::wstring utf8_to_wide_str(const std::string &input)
 	}
 
 	return result;
+}
+
+//=============================================================================
+// NOTIFICATION SOUND
+//=============================================================================
+
+void trigger_system_sound(const bool &success)
+{
+	PlaySound((LPCTSTR)(success ? SND_ALIAS_SYSTEMASTERISK : SND_ALIAS_SYSTEMHAND), NULL, SND_ALIAS_ID | SND_SYNC | SND_SYSTEM);
 }

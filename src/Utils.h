@@ -40,12 +40,23 @@ std::wstring second_to_string(const double &count);
 std::string wide_str_to_utf8(const std::wstring &str);
 std::wstring utf8_to_wide_str(const std::string &str);
 
+void trigger_system_sound(const bool &success);
+
 #define CHECK_USER_ABORT() do \
 { \
 	if(g_userAbortFlag)  \
 	{ \
 		std::wcerr << L"\n\nSIGINT: Operation aborted by user !!!\n" << std::endl; \
 		for(;;) exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)
+
+#define TRIGGER_SYSTEM_SOUND(X,Y) do \
+{ \
+	if((X))  \
+	{ \
+		trigger_system_sound((Y)); \
 	} \
 } \
 while(0)

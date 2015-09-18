@@ -72,11 +72,15 @@ The following options *may* be included, in an arbitrary order:
 * **`--insecure`**  
   Do **not** cause HTTPS requests to fail, if the server's TLS/SSL certificate is invalid (e.g. already expired or wrong DN) or cannot be validated (e.g. unknown issuer). Use this with extreme care !!!
 
+* **`--notify`**  
+  Triggers a standard system "notification" sound as soon as the process has completed. The type of the sound depends on whether the download has completed successfully or failed.
+
+* **`--help`**  
+  If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
+
 * **`--verbose`**  
   Enables verbose logging, i.e. writes additional status information to the console. This is intended for debugging purposes and does *not* normally need to be specified.
 
-* **`--help`**  
-  If this option is set, INetGet will print the "help screen" to the console and then exit immediately.
 
 ### Exit Codes ###
 

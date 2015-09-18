@@ -76,6 +76,7 @@ Params::Params(void)
 	m_bDisableProxy(false),
 	m_bDisableRedir(false),
 	m_bInsecure(false),
+	m_bEnableAlert(false),
 	m_bVerboseMode(false)
 {
 }
@@ -220,6 +221,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bInsecure = true);
+	}
+	else if(IS_OPTION("notify"))
+	{
+		ENSURE_NOVAL();
+		return (m_bEnableAlert = true);
 	}
 	else if(IS_OPTION("verbose"))
 	{
