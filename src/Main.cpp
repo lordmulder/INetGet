@@ -25,6 +25,7 @@
 #include "URL.h"
 #include "Utils.h"
 #include "Params.h"
+#include "Client_FTP.h"
 #include "Client_HTTP.h"
 #include "Sink_File.h"
 #include "Sink_StdOut.h"
@@ -116,6 +117,9 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 {
 	switch(scheme_id)
 	{
+	case INTERNET_SCHEME_FTP:
+		client.reset(new FtpClient(disableProxy, userAgentStr, verbose));
+		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
 		client.reset(new HttpClient(disableProxy, userAgentStr, verbose));
@@ -376,7 +380,7 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	std::unique_ptr<AbstractClient> client;
 	if(!create_client(client, url.getScheme(), params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()))
 	{
-		std::wcerr << "Specified protocol is unsupported! Only HTTP and HTTPS are currently allowed.\n" << std::endl;
+		std::wcerr << "Specified protocol is unsupported! Only HTTP(S) and FTP are allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 

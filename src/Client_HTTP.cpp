@@ -151,7 +151,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&status_callback)) == INTERNET_INVALID_STATUS_CALLBACK)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -173,7 +173,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nHttpOpenRequest() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"--> Failed!\n\nHttpOpenRequest() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -194,12 +194,24 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 		headers << TYPE_FORM_DATA;
 	}
 
+	//Setup the retry point
+	bool retry_flag = no_validate;
+	label_retry_create_request:
+
 	//Try to actually send the HTTP request
 	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data)), DWORD(post_data.length()));
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		if((error_code == ERROR_INTERNET_SEC_CERT_REV_FAILED) && (!retry_flag))
+		{
+			if(retry_flag = update_security_flags(m_hRequest, SECURITY_FLAG_IGNORE_REVOCATION))
+			{
+				std::wcerr << L"--> Failed to check for revocation, retrying with revocation checks disabled!" << std::endl;
+				goto label_retry_create_request;
+			}
+		}
+		std::wcerr << L"--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 	

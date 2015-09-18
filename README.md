@@ -108,6 +108,16 @@ Here are some basic examples that show the command-line usage of INetGet:
   `echo http://www.warr.org/buckethead.html | INetGet.exe - - | findstr Sacrifist`
 
 
+## Download ##
+
+The source codes of *INetGet* are available from the official [**Git**](http://git-scm.com/) repository:
+
+* `git clone https://github.com/lordmulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://github.com/lordmulder/INetGet))
+
+* `git clone https://bitbucket.org/lord_mulder/inetget.git INetGet-src` &nbsp; ([Browse](https://bitbucket.org/lord_mulder/inetget/))
+
+* `git clone https://gitlab.com/lord_mulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://gitlab.com/lord_mulder/INetGet))
+
 ## License ##
 
 **INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  

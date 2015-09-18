@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="src\Average.cpp" />
     <ClCompile Include="src\Client_Abstract.cpp" />
+    <ClCompile Include="src\Client_FTP.cpp" />
     <ClCompile Include="src\Client_HTTP.cpp" />
     <ClCompile Include="src\Main.cpp" />
     <ClCompile Include="src\Params.cpp" />
@@ -37,6 +38,7 @@
   <ItemGroup>
     <ClInclude Include="src\Average.h" />
     <ClInclude Include="src\Client_Abstract.h" />
+    <ClInclude Include="src\Client_FTP.h" />
     <ClInclude Include="src\Client_HTTP.h" />
     <ClInclude Include="src\Params.h" />
     <ClInclude Include="src\Sink_Abstract.h" />
