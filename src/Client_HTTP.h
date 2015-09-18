@@ -39,7 +39,7 @@ public:
 	virtual bool result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd);
 
 	//Read payload
-	virtual bool read_data(uint8_t *out_buff, const size_t &buff_size, size_t &bytes_read, bool &eof_flag);
+	virtual bool read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag);
 
 private:
 	//Create connection/request

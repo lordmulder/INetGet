@@ -1,5 +1,6 @@
 /bin
 /obj
+/out
 z_paths.bat
 *.sdf
 *.suo

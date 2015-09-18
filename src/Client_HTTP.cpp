@@ -195,7 +195,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	}
 
 	//Try to actually send the HTTP request
-	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data)), post_data.length());
+	BOOL success = HttpSendRequest(m_hRequest, CSTR(headers.str()), (-1L), ((LPVOID)CSTR(post_data)), DWORD(post_data.length()));
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
@@ -249,7 +249,7 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_siz
 // READ PAYLOAD
 //=============================================================================
 
-bool HttpClient::read_data(uint8_t *out_buff, const size_t &buff_size, size_t &bytes_read, bool &eof_flag)
+bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag)
 {
 	if(m_hRequest == NULL)
 	{

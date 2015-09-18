@@ -276,7 +276,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
 	sink->close();
 
-	std::wcerr << "done\n\nDownload completed in " << second_to_string(total_time) << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
+	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? second_to_string(total_time) : L"no time") << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
