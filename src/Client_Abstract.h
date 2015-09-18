@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// INetGet - Lightweight command-line front-end to WinInet API
+// INetGet - Lightweight command-line front-end to WinINet API
 // Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
 //
 // This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@ public:
 	virtual bool read_data(uint8_t *out_buff, const size_t &buff_size, size_t &bytes_read, bool &eof_flag) = 0;
 
 protected:
-	//WinInet initialization
+	//WinINet initialization
 	bool wininet_init(void);
 	bool wininet_exit(void);
 

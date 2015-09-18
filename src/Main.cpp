@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// INetGet - Lightweight command-line front-end to WinInet API
+// INetGet - Lightweight command-line front-end to WinINet API
 // Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
 //
 // This program is free software; you can redistribute it and/or modify
@@ -36,7 +36,7 @@
 #define NOMINMAX 1
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
-#include <WinInet.h>
+#include <WinINet.h>
 
 //CRT
 #include <stdint.h>
@@ -61,13 +61,13 @@ static std::string stdin_get_line(void)
 static std::wstring build_version_string(void)
 {
 	std::wostringstream str;
-	if(VER_INETGET_PATCH > 0)
+	if(VERSION_PATCH > 0)
 	{
-		str << std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR << L'_' << std::setw(0) << VER_INETGET_PATCH;
+		str << std::setw(0) << VERSION_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VERSION_MINOR << L'_' << std::setw(0) << VERSION_PATCH;
 	}
 	else
 	{
-		str << std::setw(0) << VER_INETGET_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VER_INETGET_MINOR;
+		str << std::setw(0) << VERSION_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VERSION_MINOR;
 	}
 	return str.str();
 }
@@ -75,9 +75,9 @@ static std::wstring build_version_string(void)
 static void print_logo(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr << L"\nINetGet v" << build_version_string() << " - Lightweight command-line front-end to WinInet\n"
+	std::wcerr << L"\nINetGet v" << build_version_string() << " - Lightweight command-line front-end to WinINet\n"
 		<< L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved.\n"
-		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << " with " << BUILD_COMP << " (" << BUILD_ARCH << ")\n" << std::endl;
+		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << ", " << BUILD_COMP << ", Win-" << BUILD_ARCH << ", " << BUILD_CONF << '\n' << std::endl;
 	std::wcout.flags(stateBackup);
 }
 

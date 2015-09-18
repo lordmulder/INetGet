@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////////
-// INetGet - Lightweight command-line front-end to WinInet API
+// INetGet - Lightweight command-line front-end to WinINet API
 // Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
 //
 // This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 //Win32
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
-#include <WinInet.h>
+#include <WinINet.h>
 
 //CRT
 #include <stdint.h>
@@ -78,7 +78,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 {
 	if(!wininet_init())
 	{
-		return false; /*WinInet failed to initialize*/
+		return false; /*WinINet failed to initialize*/
 	}
 
 	//Close the existing connection, just to be sure

@@ -41,6 +41,17 @@
     <ClInclude Include="src\Utils.h" />
     <ClInclude Include="src\Version.h" />
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="INetGet.rcc">
+      <FileType>Document</FileType>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="res\compat.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\inetget.ico" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{157E1DB2-A934-4AB6-99CF-626AADB42F79}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
@@ -74,11 +85,13 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\obj\$(Configuration)\</IntDir>
+    <TargetName>INetGet</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)\bin\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)\obj\$(Configuration)\</IntDir>
+    <TargetName>INetGet</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
