@@ -71,7 +71,7 @@ FtpClient::~FtpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool FtpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const bool &no_redir, const bool &insecure)
+bool FtpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure)
 {
 	if(!wininet_init())
 	{

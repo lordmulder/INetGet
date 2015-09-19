@@ -102,6 +102,7 @@ static void print_help_screen(void)
 		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
 		<< L"  --no-redir    : Disable automatic redirection, enabled by default\n"
 		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
+		<< L"  --refer=<url> : Include the given 'referrer' address in the request\n"
 		<< L"  --notify      : Trigger a system sound when the download completed/failed\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
@@ -296,13 +297,13 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &outFileName, const bool &no_redir, const bool &insecure, const bool &alert)
+static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &no_redir, const bool &insecure, const bool &alert)
 {
 	//Initialize the post data string
 	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
 
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data_utf8, no_redir, insecure))
+	if(!client->open(http_verb, url, post_data_utf8, referrer, no_redir, insecure))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
@@ -385,5 +386,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getOutput(), params.getDisableRedir(), params.getInsecure(), params.getEnableAlert());
+	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getDisableRedir(), params.getInsecure(), params.getEnableAlert());
 }

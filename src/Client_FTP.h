@@ -32,7 +32,7 @@ public:
 	virtual ~FtpClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const bool &no_redir, const bool &insecure);
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure);
 	virtual bool close(void);
 
 	//Fetch result

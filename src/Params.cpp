@@ -23,6 +23,7 @@
 #include "Params.h"
 
 //Internal
+#include "URL.h"
 #include "Utils.h"
 
 //CRT
@@ -125,13 +126,28 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 		}
 	}
 
-	if(!(m_bShowHelp || (argCounter >= 2)))
+	if((argCounter < 2) && (argc >= 2))
 	{
-		if((argc >= 2) && (!_wcsicmp(argv[1], L"-h") || !_wcsicmp(argv[1], L"/?")))
+		if((!_wcsicmp(argv[1], L"-h")) || (!_wcsicmp(argv[1], L"-?")) || (!_wcsicmp(argv[1], L"/?")))
 		{
-			return (m_bShowHelp = true);
+			m_bShowHelp = true;
 		}
+	}
+		
+	return validate();
+}
+
+bool Params::validate(void)
+{
+	if((m_strSource.empty() || m_strOutput.empty()) && (!m_bShowHelp))
+	{
 		std::wcerr << L"ERROR: Required parameter is missing!\n" << std::endl;
+		return false;
+	}
+
+	if((!m_strReferrer.empty()) && (!URL(m_strReferrer).isComplete()))
+	{
+		std::wcerr << L"ERROR: The specified referrer address is invalid!\n" << std::endl;
 		return false;
 	}
 
@@ -221,6 +237,12 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bInsecure = true);
+	}
+	else if(IS_OPTION("refer"))
+	{
+		ENSURE_VALUE();
+		m_strReferrer = option_val;
+		return true;
 	}
 	else if(IS_OPTION("notify"))
 	{

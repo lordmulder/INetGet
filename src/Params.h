@@ -43,10 +43,13 @@ public:
 	inline const std::wstring &getUserAgent    (void) const { return m_strUserAgent;  }
 	inline const bool         &getDisableRedir (void) const { return m_bDisableRedir; }
 	inline const bool         &getInsecure     (void) const { return m_bInsecure;     }
+	inline const std::wstring &getReferrer     (void) const { return m_strReferrer;  }
 	inline const bool         &getEnableAlert  (void) const { return m_bEnableAlert;  }
 	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
 
 private:
+	bool validate(void);
+
 	bool processParamN(const size_t n, const std::wstring &param);
 	bool processOption(const std::wstring &option);
 	bool processOption(const std::wstring &option_key, const std::wstring &option_val);
@@ -62,6 +65,7 @@ private:
 	std::wstring m_strUserAgent;
 	bool         m_bDisableRedir;
 	bool         m_bInsecure;
+	std::wstring m_strReferrer;
 	bool         m_bEnableAlert;
 	bool         m_bVerboseMode;
 };

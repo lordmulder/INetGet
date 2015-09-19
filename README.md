@@ -72,6 +72,9 @@ The following options *may* be included, in an arbitrary order:
 * **`--insecure`**  
   Do **not** cause HTTPS requests to fail, if the server's TLS/SSL certificate is invalid (e.g. already expired or wrong DN) or cannot be validated (e.g. unknown issuer). Use this with extreme care !!!
 
+* **`--refer=<url>`**  
+  Includes the given [*referrer*](https://en.wikipedia.org/wiki/HTTP_referer) address in the HTTP request. If this option is absent, INetGet does *not* generate a `Referer` field in the request.
+
 * **`--notify`**  
   Triggers a standard system "notification" sound as soon as the process has completed. The type of the sound depends on whether the download has completed successfully or failed.
 

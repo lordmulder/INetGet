@@ -74,7 +74,7 @@ HttpClient::~HttpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const bool &no_redir, const bool &insecure)
+bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure)
 {
 	if(!wininet_init())
 	{
@@ -102,7 +102,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	}
 
 	//Create HTTP request and send!
-	if(!create_request(use_tls, verb, url.getUrlPath(), url.getExtraInfo(), post_data, no_redir, insecure))
+	if(!create_request(use_tls, verb, url.getUrlPath(), url.getExtraInfo(), post_data, referrer, no_redir, insecure))
 	{
 		return false; /*the request could not be created or sent*/
 	}
@@ -159,7 +159,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	return true;
 }
 
-bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const bool &no_redir, const bool &no_validate)
+bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &no_validate)
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
@@ -169,7 +169,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	OPTIONAL_FLAG(flags, m_disableProxy, INTERNET_FLAG_PRAGMA_NOCACHE);
 
 	//Try to create the HTTP request
-	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, NULL, (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
+	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, CSTR(referrer), (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
