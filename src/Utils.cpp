@@ -129,19 +129,23 @@ std::wstring win_error_string(const uint32_t &error_code)
 	std::wstring result;
 	if(error_code)
 	{
-		DWORD formatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
-		HMODULE hModule = NULL;
-		if((error_code >= INTERNET_ERROR_BASE) && (error_code <= INTERNET_ERROR_LAST))
+		for(size_t i = 0; i < 3; i++)
 		{
-			if(hModule = GetModuleHandle(L"wininet")) formatFlags |= FORMAT_MESSAGE_FROM_HMODULE;
-		}
-		LPVOID lpMsgBuf = NULL;
-		DWORD bufLen = FormatMessage(formatFlags, hModule, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &lpMsgBuf, 0, NULL );
-		if((bufLen > 0) && lpMsgBuf)
-		{
-			std::wstring temp((LPTSTR)lpMsgBuf);
-			result = trim(temp);
-			LocalFree(lpMsgBuf);
+			HMODULE hModule = NULL;
+			DWORD formatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
+			if(hModule = ((i > 0) ? GetModuleHandle((i > 1) ? L"winhttp" : L"wininet") : NULL))
+			{
+				formatFlags |= FORMAT_MESSAGE_FROM_HMODULE;
+			}
+			LPVOID lpMsgBuf = NULL;
+			DWORD bufLen = FormatMessage(formatFlags, hModule, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &lpMsgBuf, 0, NULL );
+			if((bufLen > 0) && lpMsgBuf)
+			{
+				std::wstring temp((LPTSTR)lpMsgBuf);
+				result = trim(temp);
+				LocalFree(lpMsgBuf);
+				break;
+			}
 		}
 	}
 

@@ -47,6 +47,7 @@ public:
 	inline const bool         &getEnableAlert  (void) const { return m_bEnableAlert;  }
 	inline const double       &getTimeoutCon   (void) const { return m_dTimeoutCon;   }
 	inline const double       &getTimeoutRcv   (void) const { return m_dTimeoutRcv;   }
+	inline const uint32_t     &getRetryCount   (void) const { return m_uRetryCount;   }
 	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
 
 private:
@@ -71,6 +72,7 @@ private:
 	bool         m_bEnableAlert;
 	double       m_dTimeoutCon;
 	double       m_dTimeoutRcv;
+	uint32_t     m_uRetryCount;
 	bool         m_bVerboseMode;
 };
 

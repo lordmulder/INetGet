@@ -34,7 +34,7 @@ class AbstractClient
 public:
 	static const uint64_t SIZE_UNKNOWN = UINT64_MAX;
 
-	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const bool &verbose = false);
+	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~AbstractClient(void);
 
 	//Connection handling
@@ -67,6 +67,7 @@ protected:
 	const std::wstring m_userAgentStr;
 	const double m_timeout_con;
 	const double m_timeout_rcv;
+	const uint32_t m_connect_retry;
 
 	//Handle
 	void *m_hInternet;

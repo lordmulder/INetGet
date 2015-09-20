@@ -58,14 +58,14 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const double &timeout_con, const double &timeout_rcv, const bool &verbose)
+HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
 	m_disable_redir(no_redir),
 	m_insecure_https(insecure),
 	m_hConnection(NULL),
 	m_hRequest(NULL),
 	m_current_status(UINT32_MAX),
-	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, verbose)
+	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
 {
 }
 
@@ -205,7 +205,8 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 		headers << TYPE_FORM_DATA;
 	}
 
-	//Setup the retry point
+	//Setup retry point
+	uint32_t retry_counter = 0;
 	bool retry_flag = m_insecure_https;
 	label_retry_create_request:
 
@@ -214,6 +215,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
+		CHECK_USER_ABORT();
 		if((error_code == ERROR_INTERNET_SEC_CERT_REV_FAILED) && (!retry_flag))
 		{
 			if(retry_flag = update_security_opts(m_hRequest, SECURITY_FLAG_IGNORE_REVOCATION))
@@ -221,6 +223,11 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 				std::wcerr << L"--> Failed to check for revocation, retrying with revocation checks disabled!" << std::endl;
 				goto label_retry_create_request;
 			}
+		}
+		else if((error_code == ERROR_INTERNET_CANNOT_CONNECT) && (retry_counter++ < m_connect_retry))
+		{
+			std::wcerr << L"--> Connection has failed. Retrying! [" << retry_counter << L'/' << m_connect_retry << ']' << std::endl;
+			goto label_retry_create_request;
 		}
 		std::wcerr << L"--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		return false;

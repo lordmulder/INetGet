@@ -73,11 +73,25 @@ while(0)
 } \
 while(0)
 
+#define PARSE_UINT32(X) do \
+{ \
+	try \
+	{ \
+		(X) = (_wcsicmp(option_val.c_str(), L"infinite") == 0) ? UINT32_MAX : std::stoul(option_val); \
+	} \
+	catch(std::exception&) \
+	{ \
+		std::wcerr << L"ERROR: Numeric value \"" << option_val << "\" could not be parsed!\n" << std::endl; \
+		return false; \
+	} \
+} \
+while(0)
+
 #define PARSE_DOUBLE(X) do \
 { \
 	try \
 	{ \
-		(X) = (_wcsicmp(option_val.c_str(), L"infinite") == 0) ? double(UINT32_MAX) : std::stod(option_val); \
+		(X) = (_wcsicmp(option_val.c_str(), L"infinite") == 0) ? DBL_MAX : std::stod(option_val); \
 	} \
 	catch(std::exception&) \
 	{ \
@@ -101,7 +115,8 @@ Params::Params(void)
 	m_bEnableAlert(false),
 	m_bVerboseMode(false),
 	m_dTimeoutCon(std::numeric_limits<double>::quiet_NaN()),
-	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN())
+	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN()),
+	m_uRetryCount(3)
 {
 }
 
@@ -295,6 +310,18 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 		ENSURE_VALUE();
 		PARSE_DOUBLE(m_dTimeoutCon);
 		PARSE_DOUBLE(m_dTimeoutRcv);
+		return true;
+	}
+	else if(IS_OPTION("retry"))
+	{
+		ENSURE_VALUE();
+		PARSE_UINT32(m_uRetryCount);
+		return true;
+	}
+	else if(IS_OPTION("no-retry"))
+	{
+		ENSURE_NOVAL();
+		m_uRetryCount = 0;
 		return true;
 	}
 	else if(IS_OPTION("verbose"))

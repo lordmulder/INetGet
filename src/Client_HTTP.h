@@ -28,7 +28,7 @@ class HttpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const bool &verbose = false);
+	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~HttpClient(void);
 
 	//Connection handling

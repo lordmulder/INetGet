@@ -104,9 +104,11 @@ static void print_help_screen(void)
 		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
 		<< L"  --refer=<url> : Include the given 'referrer' address in the request\n"
 		<< L"  --notify      : Trigger a system sound when the download completed/failed\n"
-		<< L"  --time-cn=<b> : Specifies the connection timeout, in seconds\n"
-		<< L"  --time-rc=<b> : Specifies the receive timeout, in seconds\n"
-		<< L"  --timeout=<b> : Specifies the connection & receive timeouts, in seconds\n"
+		<< L"  --time-cn=<n> : Specifies the connection timeout, in seconds\n"
+		<< L"  --time-rc=<n> : Specifies the receive timeout, in seconds\n"
+		<< L"  --timeout=<n> : Specifies the connection & receive timeouts, in seconds\n"
+		<< L"  --retry=<n>   : Specifies the max. number of connection attempts\n"
+		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
@@ -126,7 +128,7 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getVerboseMode()));
+		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
 		break;
 	default:
 		client.reset();
@@ -142,7 +144,7 @@ static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring 
 	{
 		sink.reset(new StdOutSink());
 	}
-	else if(_wcsicmp(fileName.c_str(), L"NULL") == 0)
+	else if(_wcsicmp(fileName.c_str(), L"NUL") == 0)
 	{
 		sink.reset(new NullSink());
 	}

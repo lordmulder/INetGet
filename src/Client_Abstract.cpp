@@ -42,12 +42,13 @@ static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const double &timeout_con, const double &timeout_rcv, const bool &verbose)
+AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
 	m_timeout_con(timeout_con),
 	m_timeout_rcv(timeout_rcv),
 	m_disableProxy(disableProxy),
 	m_userAgentStr(userAgentStr),
+	m_connect_retry(connect_retry),
 	m_verbose(verbose),
 	m_hInternet(NULL)
 {

@@ -87,6 +87,12 @@ The following options *may* be included, in an arbitrary order:
 * **`--timeout=<n>`**  
   This option is a shorthand for setting both, `--time-cn=<n>` and `--time-rc=<n>`, at the same time. You can specify fractional values. Specify `infinite` to *disable* the timeouts.
 
+* **`--retry=<n>`**  
+  Specifies the maximum number of times that INetGet will *retry* to connect to the server, if the connection could *not* be established yet. By the default, INetGet will retry at most **3** times.
+
+* **`--no-retry`**  
+  Do **not** retry to connect to the server, if the connection could *not* be established the first time. Setting this option is equivalent to specifying `--retry=0`.
+
 * **`--help`**  
   If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
 

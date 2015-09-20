@@ -57,9 +57,9 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-FtpClient::FtpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool& /*no_redir*/, const bool& /*insecure*/, const double &timeout_con, const double &timeout_rcv, const bool &verbose)
+FtpClient::FtpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool& /*no_redir*/, const bool& /*insecure*/, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
-	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, verbose)
+	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
 {
 }
 
