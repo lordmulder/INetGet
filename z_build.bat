@@ -120,10 +120,10 @@ mkdir "%PACK_PATH%"
 mkdir "%PACK_PATH%\img"
 mkdir "%PACK_PATH%\img\inetget"
 
-copy "%~dp0\bin\v%INETGET_TOOL_VERS%_xp\Win32\Release\INetGet.exe" "%PACK_PATH%\INetGet.exe"
+copy "%~dp0\bin\v%INETGET_TOOL_VERS%\Win32\Release\INetGet.exe" "%PACK_PATH%\INetGet.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
-copy "%~dp0\bin\v%INETGET_TOOL_VERS%_xp\.\x64\Release\INetGet.exe" "%PACK_PATH%\INetGet.x64.exe"
+copy "%~dp0\bin\v%INETGET_TOOL_VERS%\.\x64\Release\INetGet.exe" "%PACK_PATH%\INetGet.x64.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
 copy "%~dp0\etc\doc\GPLv2.html" "%PACK_PATH%\LICENSE.html"

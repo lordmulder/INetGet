@@ -61,10 +61,17 @@ while(0)
 } \
 while(0)
 
-#define DBL_VALID_GTR(X,Y) ((!std::isnan((X))) && ((X) > (Y)))
-#define DBL_VALID_LSS(X,Y) ((!std::isnan((X))) && ((X) < (Y)))
-#define DBL_VALID_GEQ(X,Y) ((!std::isnan((X))) && ((X) >= (Y)))
-#define DBL_VALID_LEQ(X,Y) ((!std::isnan((X))) && ((X) <= (Y)))
+#if _MSC_VER >= 1800
+#define ISNAN(X) std::isnan((X))
+#define ROUND(X) std::round((X))
+#else
+#define ISNAN(X) _isnan((X))
+double ROUND(const double &d);
+#endif
+
+#define DBL_VALID_GTR(X,Y) ((!ISNAN((X))) && ((X) > (Y)))
+#define DBL_VALID_LSS(X,Y) ((!ISNAN((X))) && ((X) < (Y)))
+#define DBL_VALID_GEQ(X,Y) ((!ISNAN((X))) && ((X) >= (Y)))
+#define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))
 
 #define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
-

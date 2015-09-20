@@ -177,7 +177,7 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		if(file_size != AbstractClient::SIZE_UNKNOWN)
 		{
 			const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
-			if(!std::isnan(current_rate))
+			if(!ISNAN(current_rate))
 			{
 				if(current_rate > 0.0)
 				{
@@ -203,7 +203,7 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		}
 		else
 		{
-			if(!std::isnan(current_rate))
+			if(!ISNAN(current_rate))
 			{
 				std::wcerr << nbytes_to_string(double(total_bytes)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
 			}

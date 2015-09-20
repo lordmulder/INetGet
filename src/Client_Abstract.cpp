@@ -32,6 +32,8 @@
 
 //CRT
 #include <iostream>
+#include <cmath>
+#include <cfloat>
 
 //Default User Agent string
 static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0"; /*use something unobtrusive*/
@@ -74,7 +76,7 @@ bool AbstractClient::wininet_init()
 		//Setup the connection and receive timeouts
 		if(DBL_VALID_GTR(m_timeout_con, 0.0))
 		{
-			const double con_timeout = std::round(1000.0 * m_timeout_con);
+			const double con_timeout = ROUND(1000.0 * m_timeout_con);
 			if(!set_inet_options(m_hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, DBL_TO_UINT32(con_timeout)))
 			{
 				return false; /*failed to setup timeout!*/
@@ -82,7 +84,7 @@ bool AbstractClient::wininet_init()
 		}
 		if(DBL_VALID_GTR(m_timeout_rcv, 0.0))
 		{
-			const double rcv_timeout = std::round(1000.0 * m_timeout_rcv);
+			const double rcv_timeout = ROUND(1000.0 * m_timeout_rcv);
 			if(!set_inet_options(m_hInternet, INTERNET_OPTION_RECEIVE_TIMEOUT, DBL_TO_UINT32(rcv_timeout)))
 			{
 				return false; /*failed to setup timeout!*/
