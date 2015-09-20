@@ -28,11 +28,11 @@ class FtpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	FtpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
+	FtpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const bool &verbose = false);
 	virtual ~FtpClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure);
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer);
 	virtual bool close(void);
 
 	//Fetch result

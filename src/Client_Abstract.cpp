@@ -36,15 +36,14 @@
 //Default User Agent string
 static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9) Gecko/2008062901 IceWeasel/3.0"; /*use something unobtrusive*/
 
-//Helper macro
-static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
-
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &verbose)
+AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const double &timeout_con, const double &timeout_rcv, const bool &verbose)
 :
+	m_timeout_con(timeout_con),
+	m_timeout_rcv(timeout_rcv),
 	m_disableProxy(disableProxy),
 	m_userAgentStr(userAgentStr),
 	m_verbose(verbose),
@@ -71,6 +70,28 @@ bool AbstractClient::wininet_init()
 			const DWORD error_code = GetLastError();
 			std::wcerr << "InternetOpen() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 		}
+
+		//Setup the connection and receive timeouts
+		if(DBL_VALID_GTR(m_timeout_con, 0.0))
+		{
+			const double con_timeout = std::round(1000.0 * m_timeout_con);
+			if(!set_inet_options(m_hInternet, INTERNET_OPTION_CONNECT_TIMEOUT, DBL_TO_UINT32(con_timeout)))
+			{
+				return false; /*failed to setup timeout!*/
+			}
+		}
+		if(DBL_VALID_GTR(m_timeout_rcv, 0.0))
+		{
+			const double rcv_timeout = std::round(1000.0 * m_timeout_rcv);
+			if(!set_inet_options(m_hInternet, INTERNET_OPTION_RECEIVE_TIMEOUT, DBL_TO_UINT32(rcv_timeout)))
+			{
+				return false; /*failed to setup timeout!*/
+			}
+			if(!set_inet_options(m_hInternet, INTERNET_OPTION_SEND_TIMEOUT, DBL_TO_UINT32(rcv_timeout)))
+			{
+				return false; /*failed to setup timeout!*/
+			}
+		}
 	}
 
 	return (m_hInternet != NULL);
@@ -96,7 +117,7 @@ bool AbstractClient::wininet_exit(void)
 } \
 while(0)
 
-void __stdcall AbstractClient::status_callback(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength)
+void __stdcall AbstractClient::status_callback(void* /*hInternet*/, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t /*dwStatusInformationLength*/)
 {
 	if(AbstractClient *const instance = reinterpret_cast<AbstractClient*>(dwContext))
 	{
@@ -104,7 +125,7 @@ void __stdcall AbstractClient::status_callback(void *hInternet, uintptr_t dwCont
 	}
 }
 
-void AbstractClient::update_status(const uint32_t &status, const uintptr_t &information)
+void AbstractClient::update_status(const uint32_t &status, const uintptr_t& /*information*/)
 {
 	if(m_verbose)
 	{
@@ -160,4 +181,27 @@ bool AbstractClient::close_handle(void *&handle)
 	}
 
 	return success;
+}
+
+bool AbstractClient::set_inet_options(void *const request, const uint32_t &option, const uint32_t &value)
+{
+	if(!InternetSetOption(request, option, (LPVOID)&value, sizeof(uint32_t)))
+	{
+		const DWORD error_code = GetLastError();
+		std::wcerr << "--> Failed!\n\nInternetSetOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		return false;
+	}
+	return true;
+}
+
+bool AbstractClient::get_inet_options(void *const request, const uint32_t &option, uint32_t &value)
+{
+	DWORD buff_len = sizeof(uint32_t);
+	if(!InternetQueryOption(request, option, (LPVOID)&value, &buff_len))
+	{
+		const DWORD error_code = GetLastError();
+		std::wcerr << "--> Failed!\n\nInternetQueryOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		return false;
+	}
+	return (buff_len >= sizeof(uint32_t));
 }

@@ -60,3 +60,11 @@ while(0)
 	} \
 } \
 while(0)
+
+#define DBL_VALID_GTR(X,Y) ((!std::isnan((X))) && ((X) > (Y)))
+#define DBL_VALID_LSS(X,Y) ((!std::isnan((X))) && ((X) < (Y)))
+#define DBL_VALID_GEQ(X,Y) ((!std::isnan((X))) && ((X) >= (Y)))
+#define DBL_VALID_LEQ(X,Y) ((!std::isnan((X))) && ((X) <= (Y)))
+
+#define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
+

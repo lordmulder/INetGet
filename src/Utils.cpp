@@ -34,6 +34,7 @@
 #define WIN32_LEAN_AND_MEAN 1
 #include <Windows.h>
 #include <MMSystem.h>
+#include <WinInet.h>
 
 //=============================================================================
 // TRIM STRING
@@ -115,16 +116,16 @@ std::wstring win_error_string(const uint32_t &error_code)
 	{
 		DWORD formatFlags = FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS;
 		HMODULE hModule = NULL;
-		if((error_code >= 12000) && (error_code < 13000))
+		if((error_code >= INTERNET_ERROR_BASE) && (error_code <= INTERNET_ERROR_LAST))
 		{
 			if(hModule = GetModuleHandle(L"wininet")) formatFlags |= FORMAT_MESSAGE_FROM_HMODULE;
 		}
-
 		LPVOID lpMsgBuf = NULL;
 		DWORD bufLen = FormatMessage(formatFlags, hModule, error_code, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &lpMsgBuf, 0, NULL );
 		if((bufLen > 0) && lpMsgBuf)
 		{
-			result = trim(std::wstring((LPTSTR)lpMsgBuf));
+			std::wstring temp((LPTSTR)lpMsgBuf);
+			result = trim(temp);
 			LocalFree(lpMsgBuf);
 		}
 	}
@@ -139,7 +140,8 @@ std::wstring crt_error_string(const int &error_code)
 	wchar_t buffer[BUFFSIZE];
 	if(_wcserror_s(buffer, BUFFSIZE, error_code) == 0)
 	{
-		result = trim(std::wstring(buffer));
+		std::wstring temp((LPTSTR)buffer);
+		result = trim(temp);
 	}
 
 	return fixup_error_msg(result, uint32_t(error_code));

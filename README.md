@@ -78,6 +78,15 @@ The following options *may* be included, in an arbitrary order:
 * **`--notify`**  
   Triggers a standard system "notification" sound as soon as the process has completed. The type of the sound depends on whether the download has completed successfully or failed.
 
+* **`--time-cn=<n>`**  
+  Specifies the connection *timeout*, in seconds. You can specify fractional values. Specify `infinite` to *disable* the timeout. If this option is absent, the system defaults will be used.
+
+* **`--time-rc=<n>`**  
+  Specifies the receive (and send) *timeout*, in seconds. You can specify fractional values. Specify `infinite` to *disable* the timeout. If this option is absent, the system defaults will be used.
+
+* **`--timeout=<n>`**  
+  This option is a shorthand for setting both, `--time-cn=<n>` and `--time-rc=<n>`, at the same time. You can specify fractional values. Specify `infinite` to *disable* the timeouts.
+
 * **`--help`**  
   If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
 

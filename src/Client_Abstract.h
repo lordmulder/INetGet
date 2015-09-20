@@ -34,11 +34,11 @@ class AbstractClient
 public:
 	static const uint64_t SIZE_UNKNOWN = UINT64_MAX;
 
-	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
+	AbstractClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const bool &verbose = false);
 	virtual ~AbstractClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure) = 0;
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer) = 0;
 	virtual bool close(void) = 0;
 
 	//Fetch result
@@ -58,11 +58,15 @@ protected:
 
 	//Utilities
 	static bool close_handle(void *&handle);
+	static bool set_inet_options(void *const request, const uint32_t &option, const uint32_t &value);
+	static bool get_inet_options(void *const request, const uint32_t &option, uint32_t &value);
 
 	//Const
 	const bool m_disableProxy;
-	const std::wstring m_userAgentStr;
 	const bool m_verbose;
+	const std::wstring m_userAgentStr;
+	const double m_timeout_con;
+	const double m_timeout_rcv;
 
 	//Handle
 	void *m_hInternet;

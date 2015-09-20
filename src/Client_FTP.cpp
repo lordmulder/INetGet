@@ -38,8 +38,8 @@
 #include <sstream>
 
 //Helper functions
-static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
-static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL : str.c_str(); }
+//static const wchar_t *CSTR(const std::wstring &str) { return str.empty() ? NULL : str.c_str(); }
+//static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL : str.c_str(); }
 
 //Const
 static const wchar_t *const HTTP_VER_11      = L"HTTP/1.1";
@@ -57,9 +57,9 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-FtpClient::FtpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &verbose)
+FtpClient::FtpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool& /*no_redir*/, const bool& /*insecure*/, const double &timeout_con, const double &timeout_rcv, const bool &verbose)
 :
-	AbstractClient(disableProxy, userAgentStr, verbose)
+	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, verbose)
 {
 }
 
@@ -71,7 +71,7 @@ FtpClient::~FtpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool FtpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure)
+bool FtpClient::open(const http_verb_t& /*verb*/, const URL& /*url*/, const std::string& /*post_data*/, const std::wstring& /*referrer*/)
 {
 	if(!wininet_init())
 	{
@@ -113,18 +113,18 @@ bool FtpClient::close(void)
 // QUERY RESULT
 //=============================================================================
 
-bool FtpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd)
+bool FtpClient::result(bool& /*success*/, uint32_t& /*status_code*/, uint64_t& /*file_size*/, std::wstring& /*content_type*/, std::wstring& /*content_encd*/)
 {
 	throw std::runtime_error("FTP support *not* implemented in this version :-(");
-	return false;
+	//return false;
 }
 
 //=============================================================================
 // READ PAYLOAD
 //=============================================================================
 
-bool FtpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag)
+bool FtpClient::read_data(uint8_t* /*out_buff*/, const uint32_t& /*buff_size*/, size_t& /*bytes_read*/, bool& /*eof_flag*/)
 {
 	throw std::runtime_error("FTP support *not* implemented in this version :-(");
-	return false;
+	//return false;
 }

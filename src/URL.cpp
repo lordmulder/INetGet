@@ -28,7 +28,16 @@
 
 #include "Utils.h"
 
-#define INIT_URL_STRING(X) ((components.dw##X##Length > 0U) ? trim(std::wstring(components.lpsz##X, components.dw##X##Length)) : std::wstring())
+#define INIT_URL_STRING(X) do \
+{ \
+	m_str##X.clear(); \
+	if(components.dw##X##Length > 0U) \
+	{ \
+		std::wstring temp(std::wstring(components.lpsz##X, components.dw##X##Length)); \
+		m_str##X = trim(temp); \
+	} \
+} \
+while(0)
 
 URL::URL(const URL &other)
 :
@@ -62,14 +71,14 @@ URL::URL(const std::wstring &url)
 
 	if(InternetCrackUrl(url.c_str(), 0, 0, &components))
 	{
-		m_strScheme    = INIT_URL_STRING(Scheme);
-		m_strHostName  = INIT_URL_STRING(HostName);
-		m_strUserName  = INIT_URL_STRING(UserName);
-		m_strPassword  = INIT_URL_STRING(Password);
-		m_strUrlPath   = INIT_URL_STRING(UrlPath);
-		m_strExtraInfo = INIT_URL_STRING(ExtraInfo);
+		INIT_URL_STRING(Scheme);
+		INIT_URL_STRING(HostName);
+		INIT_URL_STRING(UserName);
+		INIT_URL_STRING(Password);
+		INIT_URL_STRING(UrlPath);
+		INIT_URL_STRING(ExtraInfo);
+		m_iSchemeId = int16_t(components.nScheme);
 		m_uiPortNumber = components.nPort;
-		m_iSchemeId    = components.nScheme;
 	}
 }
 

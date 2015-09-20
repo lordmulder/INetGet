@@ -64,7 +64,7 @@ bool NullSink::close(void)
 // WRITE
 //=============================================================================
 
-bool NullSink::write(uint8_t *const buffer, const size_t &count)
+bool NullSink::write(uint8_t *const, const size_t&)
 {
 	if(m_isOpen)
 	{

@@ -43,8 +43,10 @@ public:
 	inline const std::wstring &getUserAgent    (void) const { return m_strUserAgent;  }
 	inline const bool         &getDisableRedir (void) const { return m_bDisableRedir; }
 	inline const bool         &getInsecure     (void) const { return m_bInsecure;     }
-	inline const std::wstring &getReferrer     (void) const { return m_strReferrer;  }
+	inline const std::wstring &getReferrer     (void) const { return m_strReferrer;   }
 	inline const bool         &getEnableAlert  (void) const { return m_bEnableAlert;  }
+	inline const double       &getTimeoutCon   (void) const { return m_dTimeoutCon;   }
+	inline const double       &getTimeoutRcv   (void) const { return m_dTimeoutRcv;   }
 	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
 
 private:
@@ -67,6 +69,8 @@ private:
 	bool         m_bInsecure;
 	std::wstring m_strReferrer;
 	bool         m_bEnableAlert;
+	double       m_dTimeoutCon;
+	double       m_dTimeoutRcv;
 	bool         m_bVerboseMode;
 };
 

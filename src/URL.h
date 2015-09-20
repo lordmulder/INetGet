@@ -33,7 +33,7 @@ public:
 	~URL(void);
 
 	//Getter
-	inline const int          &getScheme   (void) const { return m_iSchemeId;    }
+	inline const int16_t      &getScheme   (void) const { return m_iSchemeId;    }
 	inline const std::wstring &getHostName (void) const { return m_strHostName;  }
 	inline const std::wstring &getUserName (void) const { return m_strUserName;  }
 	inline const std::wstring &getPassword (void) const { return m_strPassword;  }
@@ -52,7 +52,7 @@ private:
 	std::wstring m_strUrlPath;
 	std::wstring m_strExtraInfo;
 
-	int m_iSchemeId;
+	int16_t m_iSchemeId;
 	uint16_t m_uiPortNumber;
 };
 

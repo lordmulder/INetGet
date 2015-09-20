@@ -29,10 +29,17 @@
 //CRT
 #include <stdexcept>
 #include <iostream>
+#include <limits>
 
 //=============================================================================
 // UTILITIES
 //=============================================================================
+
+static inline std::wstring argv_i(const wchar_t *const argv[], const int i)
+{
+	std::wstring temp(argv[i]);
+	return trim(temp);
+}
 
 #define IS_OPTION(X) (option_key.compare(L##X) == 0)
 
@@ -66,6 +73,20 @@ while(0)
 } \
 while(0)
 
+#define PARSE_DOUBLE(X) do \
+{ \
+	try \
+	{ \
+		(X) = (_wcsicmp(option_val.c_str(), L"infinite") == 0) ? double(UINT32_MAX) : std::stod(option_val); \
+	} \
+	catch(std::exception&) \
+	{ \
+		std::wcerr << L"ERROR: Numeric value \"" << option_val << "\" could not be parsed!\n" << std::endl; \
+		return false; \
+	} \
+} \
+while(0)
+
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
@@ -78,7 +99,9 @@ Params::Params(void)
 	m_bDisableRedir(false),
 	m_bInsecure(false),
 	m_bEnableAlert(false),
-	m_bVerboseMode(false)
+	m_bVerboseMode(false),
+	m_dTimeoutCon(std::numeric_limits<double>::quiet_NaN()),
+	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN())
 {
 }
 
@@ -99,14 +122,15 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 
 	for(int i = 1; i < argc; i++)
 	{
-		const std::wstring current = trim(std::wstring(argv[i]));
+		const std::wstring current = argv_i(argv, i);
 		if(!current.empty())
 		{
 			if((!stopFlag) && (current.find(marker) == 0))
 			{
 				if(current.length() > marker.length())
 				{
-					if(!processOption(trim(current.substr(2, std::wstring::npos))))
+					std::wstring option(current.substr(2, std::wstring::npos));
+					if(!processOption(trim(option)))
 					{
 						return false;
 					}
@@ -149,6 +173,11 @@ bool Params::validate(void)
 	{
 		std::wcerr << L"ERROR: The specified referrer address is invalid!\n" << std::endl;
 		return false;
+	}
+
+	if(m_bInsecure)
+	{
+		std::wcerr << L"WARNING: Using insecure HTTPS mode, certificates will *not* be checked!\n";
 	}
 
 	if((!m_strPostData.empty()) && (m_iHttpVerb != HTTP_POST) && (m_iHttpVerb != HTTP_PUT))
@@ -248,6 +277,25 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bEnableAlert = true);
+	}
+	else if(IS_OPTION("time-cn"))
+	{
+		ENSURE_VALUE();
+		PARSE_DOUBLE(m_dTimeoutCon);
+		return true;
+	}
+	else if(IS_OPTION("time-rc"))
+	{
+		ENSURE_VALUE();
+		PARSE_DOUBLE(m_dTimeoutRcv);
+		return true;
+	}
+	else if(IS_OPTION("timeout"))
+	{
+		ENSURE_VALUE();
+		PARSE_DOUBLE(m_dTimeoutCon);
+		PARSE_DOUBLE(m_dTimeoutRcv);
+		return true;
 	}
 	else if(IS_OPTION("verbose"))
 	{

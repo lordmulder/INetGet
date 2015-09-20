@@ -28,11 +28,11 @@ class HttpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &verbose = false);
+	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const bool &verbose = false);
 	virtual ~HttpClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure);
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer);
 	virtual bool close(void);
 
 	//Fetch result
@@ -44,20 +44,24 @@ public:
 private:
 	//Create connection/request
 	bool connect(const std::wstring &hostName, const uint16_t &portNo, const std::wstring &userName, const std::wstring &password);
-	bool create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer, const bool &no_redir, const bool &insecure);
+	bool create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer);
 
 	//Status handler
 	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
 	//Utilities
 	static const wchar_t *http_verb_str(const http_verb_t &verb);
-	static bool update_security_flags(void *const requets, const uint32_t &new_flags);
+	static bool update_security_opts(void *const request, const uint32_t &new_flags);
 	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
 	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
 
 	//Handles
 	void *m_hConnection;
 	void *m_hRequest;
+	
+	//Const
+	const bool m_insecure_https;
+	const bool m_disable_redir;
 
 	//Current status
 	uint32_t m_current_status;

@@ -44,13 +44,13 @@ volatile bool g_userAbortFlag = false;
 // ERROR HANDLING
 //=============================================================================
 
-static void my_invalid_param_handler(const wchar_t* exp, const wchar_t* fun, const wchar_t* fil, unsigned int, uintptr_t)
+static void my_invalid_param_handler(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
 {
 	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
 	_exit(EXIT_FAILURE);
 }
 
-static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS *ExceptionInfo)
+static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS* /*ExceptionInfo*/)
 {
 	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
 	_exit(EXIT_FAILURE);

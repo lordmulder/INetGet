@@ -24,7 +24,7 @@
 
 #include <cstdlib>
 
-static const http_status_t STATUS_CODES[] =
+const http_status_t STATUS_CODES[] =
 {
 	{ 100, L"Continue" },
 	{ 101, L"Switching Protocols" },

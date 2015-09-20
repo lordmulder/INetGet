@@ -104,6 +104,9 @@ static void print_help_screen(void)
 		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
 		<< L"  --refer=<url> : Include the given 'referrer' address in the request\n"
 		<< L"  --notify      : Trigger a system sound when the download completed/failed\n"
+		<< L"  --time-cn=<b> : Specifies the connection timeout, in seconds\n"
+		<< L"  --time-rc=<b> : Specifies the receive timeout, in seconds\n"
+		<< L"  --timeout=<b> : Specifies the connection & receive timeouts, in seconds\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
@@ -114,16 +117,16 @@ static void print_help_screen(void)
 	std::wcout.flags(stateBackup);
 }
 
-static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const bool &disableProxy, const std::wstring userAgentStr, const bool &verbose)
+static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const Params &params)
 {
 	switch(scheme_id)
 	{
 	case INTERNET_SCHEME_FTP:
-		client.reset(new FtpClient(disableProxy, userAgentStr, verbose));
+		client.reset(new FtpClient(params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()));
 		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(disableProxy, userAgentStr, verbose));
+		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getVerboseMode()));
 		break;
 	default:
 		client.reset();
@@ -297,13 +300,13 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &no_redir, const bool &insecure, const bool &alert)
+static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
 {
 	//Initialize the post data string
 	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
 
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data_utf8, referrer, no_redir, insecure))
+	if(!client->open(http_verb, url, post_data_utf8, referrer))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
@@ -379,12 +382,12 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;
-	if(!create_client(client, url.getScheme(), params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()))
+	if(!create_client(client, url.getScheme(), params))
 	{
 		std::wcerr << "Specified protocol is unsupported! Only HTTP(S) and FTP are allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getDisableRedir(), params.getInsecure(), params.getEnableAlert());
+	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getEnableAlert());
 }
