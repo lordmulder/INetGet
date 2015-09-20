@@ -42,6 +42,8 @@ std::wstring utf8_to_wide_str(const std::string &str);
 
 void trigger_system_sound(const bool &success);
 
+time_t decode_date_str(const char *const date_str);
+
 #define CHECK_USER_ABORT() do \
 { \
 	if(g_userAbortFlag)  \

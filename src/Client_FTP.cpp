@@ -86,7 +86,6 @@ bool FtpClient::open(const http_verb_t& /*verb*/, const URL& /*url*/, const std:
 	}
 
 	throw std::runtime_error("FTP support *not* implemented in this version :-(");
-	return false;
 }
 
 bool FtpClient::close(void)

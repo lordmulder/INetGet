@@ -44,19 +44,6 @@ volatile bool g_userAbortFlag = false;
 // ERROR HANDLING
 //=============================================================================
 
-static void my_invalid_param_handler(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
-{
-	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
-	_exit(EXIT_FAILURE);
-}
-
-static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS* /*ExceptionInfo*/)
-{
-	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
-	_exit(EXIT_FAILURE);
-	return EXCEPTION_EXECUTE_HANDLER;
-}
-
 static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 {
 	switch(dwCtrlType)
@@ -70,6 +57,21 @@ static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 	return FALSE;
 }
 
+#ifdef NDEBUG
+
+static void my_invalid_param_handler(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
+{
+	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
+	_exit(EXIT_FAILURE);
+}
+
+static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS* /*ExceptionInfo*/)
+{
+	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
+	_exit(EXIT_FAILURE);
+	return EXCEPTION_EXECUTE_HANDLER;
+}
+
 static void setup_error_handlers(void)
 {
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
@@ -77,6 +79,8 @@ static void setup_error_handlers(void)
 	_set_invalid_parameter_handler(my_invalid_param_handler);
 	SetDllDirectoryW(L""); /*don'tload DLL from "current" directory*/
 }
+
+#endif //NDEBUG
 
 //=============================================================================
 // STARTUP
@@ -98,6 +102,7 @@ static int inetget_startup(const int argc, const wchar_t *const argv[])
 // ENTRY POINT
 //=============================================================================
 
+#ifdef NDEBUG
 static int wmain_ex(const int argc, const wchar_t *const argv[])
 {
 	int ret = -1;
@@ -117,6 +122,7 @@ static int wmain_ex(const int argc, const wchar_t *const argv[])
 	}
 	return ret;
 }
+#endif //NDEBUG
 
 int wmain(int argc, wchar_t* argv[])
 {

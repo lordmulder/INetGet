@@ -315,3 +315,45 @@ void trigger_system_sound(const bool &success)
 {
 	PlaySound((LPCTSTR)(success ? SND_ALIAS_SYSTEMASTERISK : SND_ALIAS_SYSTEMHAND), NULL, SND_ALIAS_ID | SND_SYNC | SND_SYSTEM);
 }
+
+//=============================================================================
+// DECODE DATE
+//=============================================================================
+
+static const char *g_months_lut[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
+static int month_str2int(const char *str)
+{
+	int ret = 0;
+
+	for(int j = 0; j < 12; j++)
+	{
+		if(!_strnicmp(str, g_months_lut[j], 3))
+		{
+			ret = j;
+			break;
+		}
+	}
+
+	return ret;
+}
+
+time_t decode_date_str(const char *const date_str) //Mmm dd yyyy
+{
+	tm date_time;
+	memset(&date_time, 0, sizeof(tm));
+
+	if(sscanf_s(date_str, "%*3s %2d %4d", &date_time.tm_mday, &date_time.tm_year) != 2)
+	{
+		return 0;
+	}
+
+	date_time.tm_year -= 1900;
+
+	if((date_time.tm_mon = month_str2int(date_str)) < 1)
+	{
+		return 0;
+	}
+
+	return mktime(&date_time);
+}

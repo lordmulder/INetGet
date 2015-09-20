@@ -47,7 +47,7 @@ The following *required* parameters must always be included:
 * **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
   The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, the program will try to *overwrite* the existing file!
-  The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``null`` may be specified in order to discard all data that is received.
+  The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``NUL`` may be specified in order to discard all data that is received.
 
 ### Options ###
 
@@ -128,6 +128,17 @@ Here are some basic examples that show the command-line usage of INetGet:
 
 ## Download ##
 
+Pre-compiled binaries of *INetGet* are available from the official download mirrors:
+
+* <https://github.com/lordmulder/INetGet/releases/latest>
+
+* <https://bitbucket.org/lord_mulder/inetget/downloads>
+
+* <http://sourceforge.net/projects/muldersoft/files/INetGet/>
+
+
+### Source Codes ###
+
 The source codes of *INetGet* are available from the official [**Git**](http://git-scm.com/) repository:
 
 * `git clone https://github.com/lordmulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://github.com/lordmulder/INetGet))
@@ -135,6 +146,7 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 * `git clone https://bitbucket.org/lord_mulder/inetget.git INetGet-src` &nbsp; ([Browse](https://bitbucket.org/lord_mulder/inetget/))
 
 * `git clone https://gitlab.com/lord_mulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://gitlab.com/lord_mulder/INetGet))
+
 
 ## License ##
 
@@ -157,6 +169,14 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 
 **See also:**  
 <http://www.gnu.org/licenses/gpl-2.0-standalone.html>
+
+
+## Changelog ##
+
+### Version 1.00 (2015-09-20) ###
+
+* This is the first public release of the INetGet application.
+
 
 &nbsp;
 

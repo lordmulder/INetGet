@@ -52,6 +52,8 @@
 // INTERNAL FUNCTIONS
 //=============================================================================
 
+static const wchar_t *const UPDATE_INFO = L"Check http://muldersoft.com/ or https://github.com/lordmulder/ for updates!\n";
+
 static std::string stdin_get_line(void)
 {
 	std::string line;
@@ -80,13 +82,22 @@ static void print_logo(void)
 		<< L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved.\n"
 		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << ", " << BUILD_COMP << ", Win-" << BUILD_ARCH << ", " << BUILD_CONF << '\n' << std::endl;
 	std::wcout.flags(stateBackup);
+
+	const time_t build_time = decode_date_str(BUILD_DATE);
+	if(build_time > 0)
+	{
+		const time_t now = time(NULL);
+		if((now > build_time) && ((now - build_time) >= 31556926i64))
+		{
+			std::wcerr << L"NOTE: This binary is more than a year old, there probably is a new version.\n" << UPDATE_INFO << std::endl;
+		}
+	}
 }
 
 static void print_help_screen(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr
-		<< L"Check http://muldersoft.com/ or https://github.com/lordmulder/ for updates!\n"
+	std::wcerr << UPDATE_INFO
 		<< L'\n'
 		<< L"Usage:\n"
 		<< L"  INetGet.exe [options] <source_addr> <output_file>\n"
