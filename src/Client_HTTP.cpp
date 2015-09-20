@@ -224,7 +224,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 				goto label_retry_create_request;
 			}
 		}
-		else if((error_code == ERROR_INTERNET_CANNOT_CONNECT) && (retry_counter++ < m_connect_retry))
+		else if(((error_code == ERROR_INTERNET_CANNOT_CONNECT) || (error_code == ERROR_INTERNET_TIMEOUT)) && (retry_counter++ < m_connect_retry))
 		{
 			std::wcerr << L"--> Connection has failed. Retrying! [" << retry_counter << L'/' << m_connect_retry << ']' << std::endl;
 			goto label_retry_create_request;
