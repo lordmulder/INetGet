@@ -36,6 +36,9 @@
 #include <MMSystem.h>
 #include <WinInet.h>
 
+//Extern
+extern uintptr_t g_userAbortEvent;
+
 //=============================================================================
 // ROUND
 //=============================================================================
@@ -50,6 +53,22 @@ double ROUND(const double &d)
 }
 
 #endif //_MSC_VER
+
+//=============================================================================
+// CHECK USER ABORT
+//=============================================================================
+
+void CHECK_USER_ABORT(void)
+{
+	if(g_userAbortEvent)
+	{
+		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0)
+		{
+			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl;
+			_exit(EXIT_FAILURE);
+		}
+	}
+}
 
 //=============================================================================
 // TRIM STRING

@@ -25,7 +25,6 @@
 #include <string>
 #include <stdint.h>
 
-extern uintptr_t g_userAbortEvent;
 static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 std::wstring &trim(std::wstring &str);
@@ -44,18 +43,6 @@ void trigger_system_sound(const bool &success);
 
 time_t decode_date_str(const char *const date_str);
 
-#define CHECK_USER_ABORT() do \
-{ \
-	if(g_userAbortEvent) \
-	{ \
-		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0) \
-		{ \
-			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl; \
-			_exit(EXIT_FAILURE); \
-		} \
-	} \
-} \
-while(0)
 
 #define TRIGGER_SYSTEM_SOUND(X,Y) do \
 { \
@@ -80,3 +67,5 @@ double ROUND(const double &d);
 #define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))
 
 #define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
+
+void CHECK_USER_ABORT(void);

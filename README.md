@@ -188,7 +188,7 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 
 ## Changelog ##
 
-### Version 1.00 (2015-09-20) ###
+### Version 1.00 (2015-09-21) ###
 
 * This is the first public release of the INetGet application.
 
