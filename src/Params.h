@@ -49,6 +49,7 @@ public:
 	inline const double       &getTimeoutRcv   (void) const { return m_dTimeoutRcv;   }
 	inline const uint32_t     &getRetryCount   (void) const { return m_uRetryCount;   }
 	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
+	inline const bool         &getForceCrl     (void) const { return m_bForceCrl;     }
 
 private:
 	bool validate(void);
@@ -73,6 +74,7 @@ private:
 	double       m_dTimeoutCon;
 	double       m_dTimeoutRcv;
 	uint32_t     m_uRetryCount;
+	bool         m_bForceCrl;
 	bool         m_bVerboseMode;
 };
 

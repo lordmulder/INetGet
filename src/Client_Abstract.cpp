@@ -42,11 +42,11 @@ static const wchar_t *const USER_AGENT = L"Mozilla/5.0 (Windows; U; Windows NT 6
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-AbstractClient::AbstractClient(const bool &disableProxy, const std::wstring &userAgentStr, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
+AbstractClient::AbstractClient(const bool &disable_proxy, const std::wstring &userAgentStr, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
 	m_timeout_con(timeout_con),
 	m_timeout_rcv(timeout_rcv),
-	m_disableProxy(disableProxy),
+	m_disable_proxy(disable_proxy),
 	m_userAgentStr(userAgentStr),
 	m_connect_retry(connect_retry),
 	m_verbose(verbose),
@@ -67,7 +67,7 @@ bool AbstractClient::wininet_init()
 {
 	if(m_hInternet == NULL)
 	{
-		m_hInternet = InternetOpen(m_userAgentStr.empty() ? USER_AGENT : m_userAgentStr.c_str(), m_disableProxy ? INTERNET_OPEN_TYPE_DIRECT : INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
+		m_hInternet = InternetOpen(m_userAgentStr.empty() ? USER_AGENT : m_userAgentStr.c_str(), m_disable_proxy ? INTERNET_OPEN_TYPE_DIRECT : INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
@@ -86,13 +86,17 @@ bool AbstractClient::wininet_init()
 		if(DBL_VALID_GTR(m_timeout_rcv, 0.0))
 		{
 			const double rcv_timeout = (m_timeout_rcv < DBL_MAX) ? ROUND(1000.0 * m_timeout_rcv) : double(UINT32_MAX);
-			if(!set_inet_options(m_hInternet, INTERNET_OPTION_RECEIVE_TIMEOUT, DBL_TO_UINT32(rcv_timeout)))
+			static const uint32_t OPTS[] =
 			{
-				return false; /*failed to setup timeout!*/
-			}
-			if(!set_inet_options(m_hInternet, INTERNET_OPTION_SEND_TIMEOUT, DBL_TO_UINT32(rcv_timeout)))
+				INTERNET_OPTION_RECEIVE_TIMEOUT, INTERNET_OPTION_DATA_RECEIVE_TIMEOUT,
+				INTERNET_OPTION_SEND_TIMEOUT, INTERNET_OPTION_DATA_SEND_TIMEOUT, NULL
+			};
+			for(size_t i = 0; OPTS[i]; i++)
 			{
-				return false; /*failed to setup timeout!*/
+				if(!set_inet_options(m_hInternet, OPTS[i], DBL_TO_UINT32(rcv_timeout)))
+				{
+					return false; /*failed to setup timeout!*/
+				}
 			}
 		}
 	}

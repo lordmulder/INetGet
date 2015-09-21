@@ -113,10 +113,11 @@ Params::Params(void)
 	m_bDisableRedir(false),
 	m_bInsecure(false),
 	m_bEnableAlert(false),
+	m_bForceCrl(false),
 	m_bVerboseMode(false),
 	m_dTimeoutCon(std::numeric_limits<double>::quiet_NaN()),
 	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN()),
-	m_uRetryCount(3)
+	m_uRetryCount(2U)
 {
 }
 
@@ -181,6 +182,12 @@ bool Params::validate(void)
 	if((m_strSource.empty() || m_strOutput.empty()) && (!m_bShowHelp))
 	{
 		std::wcerr << L"ERROR: Required parameter is missing!\n" << std::endl;
+		return false;
+	}
+
+	if(m_bInsecure && m_bForceCrl)
+	{
+		std::wcerr << L"ERROR: Options '--insecure' and '--force-crl' are mutually exclusive!\n" << std::endl;
 		return false;
 	}
 
@@ -323,6 +330,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 		ENSURE_NOVAL();
 		m_uRetryCount = 0;
 		return true;
+	}
+	else if(IS_OPTION("force-crl"))
+	{
+		ENSURE_NOVAL();
+		return (m_bForceCrl = true);
 	}
 	else if(IS_OPTION("verbose"))
 	{

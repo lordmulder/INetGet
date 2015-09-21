@@ -7,3 +7,4 @@ z_paths.bat
 *.opensdf
 *.user
 *.local.*
+/ipch

@@ -88,10 +88,14 @@ The following options *may* be included, in an arbitrary order:
   This option is a shorthand for setting both, `--time-cn=<n>` and `--time-rc=<n>`, at the same time. You can specify fractional values. Specify `infinite` to *disable* the timeouts.
 
 * **`--retry=<n>`**  
-  Specifies the maximum number of times that INetGet will *retry* to connect to the server, if the connection could *not* be established yet. By the default, INetGet will retry at most **3** times.
+  Specifies the maximum number of times that INetGet will *retry* to connect to the server, if the connection could *not* be established yet. By the default, INetGet will retry at most **two** times.
 
 * **`--no-retry`**  
   Do **not** retry to connect to the server, if the connection could *not* be established the first time. Setting this option is equivalent to specifying `--retry=0`.
+
+* **`--force-crl`**  
+  If specified, causes the connection to fail in case that the [*certificate revocation list*](https://en.wikipedia.org/wiki/Revocation_list) (CRL) could *not* be retrieved. This is more secure, but also means that HTTPS connections may fail more often.
+  By default, INetGet *does* check for certificate revocations. However, if the CRL can *not* be retrieved for some reason (and thus the revocation check is impossible), it will skip the check.
 
 * **`--help`**  
   If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
@@ -124,6 +128,17 @@ Here are some basic examples that show the command-line usage of INetGet:
 
 * Read the URL from *stdin* and write the response to *stout*:  
   `echo http://www.warr.org/buckethead.html | INetGet.exe - - | findstr Sacrifist`
+
+
+## Anti-Virus Notes ##
+
+Occasionally, it may happen that your so-called "anti-virus" software *mistakenly* detects [malware](http://en.wikipedia.org/wiki/Malware) (virus, trojan horse, worm, etc.) while you are trying to run the legitimate *INetGet* application. This is called a [**false positive**](http://en.wikipedia.org/wiki/Antivirus_software#Problems_caused_by_false_positives) and the file actually is **not** malware! Instead, this is a defect (bug) in your particular anti-virus software! In case that you encounter this kind problem, we highly recommend using [VirusTotal.com](http://www.virustotal.com/), [Virscan.org](http://www.virscan.org/) or a similar web-service to check the file in question with *multiple* anti-virus engines. Unless the majority of the anti-virus engines detect malware, it can safely be assumed that the file is indeed clean. Also, please take care with *heuristic* scan results, such as "suspicious", "generic" or "packed". Those results are **not** confirmed malware detections &ndash; they are highly speculative and (almost certainly) do **not** indicate a real infection.
+
+An important fact to consider is that, for the developer of a legitimate application, it is *impossible* to know **why** a specific "anti-virus" software is *defaming* her application as malware. That is because anti-virus programs generally are *commercial* ClosedSource software &ndash; and the anti-virus companies do **not** publish their source codes or reveal their algorithms. Moreover, a zillion of *different* so-called "anti-virus" programs exist nowadays. Therefore, the application developer can *not* know what is going on "behind the scenes" in a particular anti-virus software. Consequently, any assumptions on the reasons that trigger the [**false positive**](http://en.wikipedia.org/wiki/Antivirus_software#Problems_caused_by_false_positives) would be nothing but pure speculation! Even worse, anti-virus software is updated frequently, so the reasons why the so-called "anti-virus" software is *defaming* our application as malware may change constantly.
+
+At this point, it should be clear that implementing *workarounds* for defective anti-virus software is **not** a viable option for application developers. Since the [**false positive**](http://en.wikipedia.org/wiki/Antivirus_software#Problems_caused_by_false_positives) is a defect (bug) in the particular "anti-virus" software, it can be fixed **only** by the developer of the *anti-virus* software. For this reason, it is important that *you*, the (paying) customer, contact the support team of the *anti-virus company* and report the serious problem that exists in their software! Most anti-virus companies provide ways to report *false positives* in a standardized way, e.g. by means of a [webform](http://en.wikipedia.org/wiki/Form_%28HTML%29) or an e-mail portal. So please refer to the *anti-virus developer's web-site* for help and support. Also, when reporting *false positives*, please be self-confident: As a paying customer, you can demand that *false positives* get fixed in a timely manner. Otherwise, just get your money back!
+
+Last but not least: Keep in mind that INetGet is **free software**. This means that *source codes* of INetGet are freely available to everybody! Thus, in case that you do *not* trust the provided pre-compiled *binaries* of INetGet, you may compile your own binaries directly from the source code&hellip;
 
 
 ## Download ##
@@ -177,6 +192,7 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 
 * This is the first public release of the INetGet application.
 
+* FTP support is *not* yet implemented in this version.
 
 &nbsp;
 

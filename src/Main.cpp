@@ -120,6 +120,7 @@ static void print_help_screen(void)
 		<< L"  --timeout=<n> : Specifies the connection & receive timeouts, in seconds\n"
 		<< L"  --retry=<n>   : Specifies the max. number of connection attempts\n"
 		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
+		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
@@ -139,7 +140,7 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
+		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getForceCrl(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
 		break;
 	default:
 		client.reset();

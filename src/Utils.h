@@ -25,7 +25,7 @@
 #include <string>
 #include <stdint.h>
 
-extern volatile bool g_userAbortFlag;
+extern uintptr_t g_userAbortEvent;
 static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 std::wstring &trim(std::wstring &str);
@@ -46,10 +46,13 @@ time_t decode_date_str(const char *const date_str);
 
 #define CHECK_USER_ABORT() do \
 { \
-	if(g_userAbortFlag)  \
+	if(g_userAbortEvent) \
 	{ \
-		std::wcerr << L"\n\nSIGINT: Operation aborted by user !!!\n" << std::endl; \
-		for(;;) exit(EXIT_FAILURE); \
+		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0) \
+		{ \
+			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl; \
+			_exit(EXIT_FAILURE); \
+		} \
 	} \
 } \
 while(0)

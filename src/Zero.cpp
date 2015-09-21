@@ -38,7 +38,7 @@
 #endif
 
 //Abort flags
-volatile bool g_userAbortFlag = false;
+uintptr_t g_userAbortEvent = NULL;
 
 //=============================================================================
 // ERROR HANDLING
@@ -51,8 +51,11 @@ static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 	case CTRL_C_EVENT:
 	case CTRL_BREAK_EVENT:
 	case CTRL_CLOSE_EVENT:
-		g_userAbortFlag = true;
-		return TRUE;
+		if(g_userAbortEvent != NULL)
+		{
+			SetEvent((HANDLE)g_userAbortEvent);
+			return TRUE;
+		}
 	}
 	return FALSE;
 }
@@ -90,11 +93,15 @@ int inetget_main(const int argc, const wchar_t *const argv[]);
 
 static int inetget_startup(const int argc, const wchar_t *const argv[])
 {
+	timeBeginPeriod(1);
+
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 	_setmode(_fileno(stdin ), _O_BINARY);
-	timeBeginPeriod(1);
+
+	g_userAbortEvent = (uintptr_t) CreateEvent(NULL, TRUE, FALSE, NULL);
 	SetConsoleCtrlHandler(my_sigint_handler, TRUE);
+
 	return inetget_main(argc, argv);
 }
 

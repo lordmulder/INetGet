@@ -58,15 +58,20 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
+HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const bool &force_crl, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
 	m_disable_redir(no_redir),
-	m_insecure_https(insecure),
+	m_insecure_tls(insecure),
+	m_force_crl(force_crl),
 	m_hConnection(NULL),
 	m_hRequest(NULL),
 	m_current_status(UINT32_MAX),
 	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
 {
+	if(m_insecure_tls && m_force_crl)
+	{
+		throw std::runtime_error("Flags 'insecure' and 'force_crl' are mutually exclusive!");
+	}
 }
 
 HttpClient::~HttpClient(void)
@@ -174,10 +179,10 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
-	OPTIONAL_FLAG(flags, use_tls,          INTERNET_FLAG_SECURE);
-	OPTIONAL_FLAG(flags, m_disable_redir,  INTERNET_FLAG_NO_AUTO_REDIRECT);
-	OPTIONAL_FLAG(flags, m_disableProxy,   INTERNET_FLAG_PRAGMA_NOCACHE);
-	OPTIONAL_FLAG(flags, m_insecure_https, INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID);
+	OPTIONAL_FLAG(flags, use_tls,         INTERNET_FLAG_SECURE);
+	OPTIONAL_FLAG(flags, m_disable_redir, INTERNET_FLAG_NO_AUTO_REDIRECT);
+	OPTIONAL_FLAG(flags, m_insecure_tls,  INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID);
+	OPTIONAL_FLAG(flags, m_disable_proxy, INTERNET_FLAG_PRAGMA_NOCACHE);
 
 	//Try to create the HTTP request
 	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, CSTR(referrer), (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
@@ -189,13 +194,10 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	}
 
 	//Update the security flags, if required
-	if(m_insecure_https)
+	static const DWORD insecure_flags = SECURITY_FLAG_IGNORE_REVOCATION | SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_WRONG_USAGE;
+	if(!update_security_opts(m_hRequest, insecure_flags, m_insecure_tls))
 	{
-		static const DWORD insecure_flags = SECURITY_FLAG_IGNORE_REVOCATION | SECURITY_FLAG_IGNORE_UNKNOWN_CA | SECURITY_FLAG_IGNORE_WRONG_USAGE;
-		if(!update_security_opts(m_hRequest, insecure_flags))
-		{
-			return false; /*updating the flags failed!*/
-		}
+		return false; /*updating the flags failed!*/
 	}
 
 	//Prepare headers
@@ -207,7 +209,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 
 	//Setup retry point
 	uint32_t retry_counter = 0;
-	bool retry_flag = m_insecure_https;
+	bool retry_flag = m_insecure_tls || m_force_crl;
 	label_retry_create_request:
 
 	//Try to actually send the HTTP request
@@ -218,7 +220,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 		CHECK_USER_ABORT();
 		if((error_code == ERROR_INTERNET_SEC_CERT_REV_FAILED) && (!retry_flag))
 		{
-			if(retry_flag = update_security_opts(m_hRequest, SECURITY_FLAG_IGNORE_REVOCATION))
+			if(retry_flag = update_security_opts(m_hRequest, SECURITY_FLAG_IGNORE_REVOCATION, true))
 			{
 				std::wcerr << L"--> Failed to check for revocation, retrying with revocation checks disabled!" << std::endl;
 				goto label_retry_create_request;
@@ -352,12 +354,12 @@ const wchar_t *HttpClient::http_verb_str(const http_verb_t &verb)
 	throw new std::runtime_error("Invalid verb specified!");
 }
 
-bool HttpClient::update_security_opts(void *const request, const uint32_t &new_flags)
+bool HttpClient::update_security_opts(void *const request, const uint32_t &new_flags, const bool &enable)
 {
 	uint32_t security_flags = 0;
 	if(get_inet_options(request, INTERNET_OPTION_SECURITY_FLAGS, security_flags))
 	{
-		security_flags |= new_flags;
+		security_flags = enable ? (security_flags | new_flags) : (security_flags & (~new_flags));
 		return set_inet_options(request, INTERNET_OPTION_SECURITY_FLAGS, security_flags);
 	}
 	return false;

@@ -28,7 +28,7 @@ class HttpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	HttpClient(const bool &disableProxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
+	HttpClient(const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const bool &force_crl = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~HttpClient(void);
 
 	//Connection handling
@@ -51,7 +51,7 @@ private:
 
 	//Utilities
 	static const wchar_t *http_verb_str(const http_verb_t &verb);
-	static bool update_security_opts(void *const request, const uint32_t &new_flags);
+	static bool update_security_opts(void *const request, const uint32_t &new_flags, const bool &enable);
 	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
 	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
 
@@ -60,7 +60,8 @@ private:
 	void *m_hRequest;
 	
 	//Const
-	const bool m_insecure_https;
+	const bool m_insecure_tls;
+	const bool m_force_crl;
 	const bool m_disable_redir;
 
 	//Current status
