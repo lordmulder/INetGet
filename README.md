@@ -163,6 +163,13 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 * `git clone https://gitlab.com/lord_mulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://gitlab.com/lord_mulder/INetGet))
 
 
+## Help & Support
+
+For bug reports, feature requests and patch submissions, please refer to the **issue tracker** on our *GitHub* project site:
+
+<https://github.com/lordmulder/INetGet/issues>
+
+
 ## License ##
 
 **INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
@@ -187,6 +194,10 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 
 
 ## Changelog ##
+
+### Version 1.01 (????-??-??) ###
+
+* Correctly show file size and remaining time for files larger than 4 GB.
 
 ### Version 1.00 (2015-09-21) ###
 

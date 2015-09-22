@@ -74,21 +74,49 @@ static const uint32_t VERSION_PATCH = VER_INETGET_PATCH;
 
 #if defined(_MSC_VER)
 	#if(_MSC_VER == 1900)
-		static const char *BUILD_COMP = "MSVC 14.0";
+		static const char *const BUILD_COMP = "MSVC 14.0";
 	#elif(_MSC_VER == 1800)
-		static const char *BUILD_COMP = "MSVC 12.0";
+		#if (_MSC_FULL_VER == 180021005)
+			static const char *const BUILD_COMP = "MSVC 12.0";
+		#elif (_MSC_FULL_VER == 180030501)
+			static const char *const BUILD_COMP = "MSVC 12.2";
+		#elif (_MSC_FULL_VER == 180030723)
+			static const char *const BUILD_COMP = "MSVC 12.3";
+		#elif (_MSC_FULL_VER == 180031101)
+			static const char *const BUILD_COMP = "MSVC 12.4";
+		#elif (_MSC_FULL_VER == 180040629)
+			static const char *const BUILD_COMP = "MSVC 12.5";
+		#else
+			#error Compiler version is not supported yet!
+		#endif
 	#elif(_MSC_VER == 1700)
-		static const char *BUILD_COMP = "MSVC 11.0";
+		#if (_MSC_FULL_VER == 170050727)
+			static const char *const BUILD_COMP = "MSVC 11.0";
+		#elif (_MSC_FULL_VER == 170051106)
+			static const char *const BUILD_COMP = "MSVC 11.1";
+		#elif (_MSC_FULL_VER == 170060315)
+			static const char *const BUILD_COMP = "MSVC 11.2";
+		#elif (_MSC_FULL_VER == 170060610)
+			static const char *const BUILD_COMP = "MSVC 11.3";
+		#elif (_MSC_FULL_VER == 170061030)
+			static const char *const BUILD_COMP = "MSVC 11.4";
+		#else
+			#error Compiler version is not supported yet!
+		#endif
 	#elif(_MSC_VER == 1600)
-		static const char *BUILD_COMP = "MSVC 10.0";
+		#if (_MSC_FULL_VER >= 160040219)
+			static const char *const BUILD_COMP = "MSVC 10.1";
+		#else
+			static const char *const BUILD_COMP = "MSVC 10.0";
+		#endif
 	#else
 		#error Unsupported compiler version!
 	#endif
 
 	#ifdef _M_X64
-		static const char *BUILD_ARCH = "x64";
+		static const char *const BUILD_ARCH = "x64";
 	#else
-		static const char *BUILD_ARCH = "x86";
+		static const char *const BUILD_ARCH = "x86";
 	#endif
 #else
 	#error Unsupported compiler detected!

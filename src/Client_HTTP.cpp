@@ -181,7 +181,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
 	OPTIONAL_FLAG(flags, use_tls,         INTERNET_FLAG_SECURE);
 	OPTIONAL_FLAG(flags, m_disable_redir, INTERNET_FLAG_NO_AUTO_REDIRECT);
-	OPTIONAL_FLAG(flags, m_insecure_tls,  INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID);
+	OPTIONAL_FLAG(flags, m_insecure_tls,  INTERNET_FLAG_IGNORE_CERT_CN_INVALID | INTERNET_FLAG_IGNORE_CERT_DATE_INVALID | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTP);
 	OPTIONAL_FLAG(flags, m_disable_proxy, INTERNET_FLAG_PRAGMA_NOCACHE);
 
 	//Try to create the HTTP request
@@ -245,36 +245,34 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 
 bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd)
 {
+	success = false;
+	status_code = 0;
+	file_size = SIZE_UNKNOWN;
+	content_type.clear();
+	content_encd.clear();
+
 	if(m_hRequest == NULL)
 	{
-		std::wcerr << "INTERNAL ERROR: There currently is no active request!" << std::endl;
+		std::wcerr << "INTERNAL ERROR: There currently is no active request!\n" << std::endl;
 		return false; /*request not created yet*/
 	}
 
 	if(!get_header_int(m_hRequest, HTTP_QUERY_STATUS_CODE, status_code))
 	{
-		status_code = 0;
+		return false; /*couldn't get status code*/
 	}
 
-	uint32_t content_length = 0;
-	if(!get_header_int(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
+	std::wstring content_length;
+	if(get_header_str(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
 	{
-		content_length = 0;
+		file_size = parse_file_size(content_length);
 	}
 
-	if(!get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE, content_type))
-	{
-		content_type.clear();
-	}
-
-	if(!get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd))
-	{
-		content_encd.clear();
-	}
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE,     content_type);
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd);
 
 	success = ((status_code >= 200) && (status_code < 300));
-	file_size = ((content_length > 0) && (content_length < UINT32_MAX)) ? uint64_t(content_length) : SIZE_UNKNOWN;
-	return (status_code > 0);
+	return true;
 }
 
 //=============================================================================
@@ -285,7 +283,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t 
 {
 	if(m_hRequest == NULL)
 	{
-		std::wcerr << "\n\nINTERNAL ERROR: There currently is no active request!" << std::endl;
+		std::wcerr << "\n\nINTERNAL ERROR: There currently is no active request!\n" << std::endl;
 		return false; /*request not created yet*/
 	}
 
@@ -393,8 +391,9 @@ bool HttpClient::get_header_str(void *const request, const uint32_t type, std::w
 
 	if(HttpQueryInfo(request, type, &result, &resultSize, 0) == TRUE)
 	{
-		value = std::wstring(result, resultSize / sizeof(wchar_t));
-		return true;
+		std::wstring temp(result);
+		value = trim(temp);
+		return (!value.empty());
 	}
 
 	const DWORD error_code = GetLastError();
@@ -403,5 +402,24 @@ bool HttpClient::get_header_str(void *const request, const uint32_t type, std::w
 		std::wcerr << "HttpQueryInfo() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
 	}
 
+	value.clear();
 	return false;
+}
+
+uint64_t HttpClient::parse_file_size(const std::wstring &str)
+{
+	if(str.empty())
+	{
+		return SIZE_UNKNOWN; /*string is empty*/
+	}
+
+	try
+	{
+		const uint64_t result = std::stoull(str);
+		return (result > 0ui64) ? result : SIZE_UNKNOWN;
+	}
+	catch(std::exception&)
+	{
+		return SIZE_UNKNOWN; /*parsing error*/
+	}
 }

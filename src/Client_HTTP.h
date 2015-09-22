@@ -54,6 +54,7 @@ private:
 	static bool update_security_opts(void *const request, const uint32_t &new_flags, const bool &enable);
 	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
 	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
+	static uint64_t parse_file_size(const std::wstring &str);
 
 	//Handles
 	void *m_hConnection;

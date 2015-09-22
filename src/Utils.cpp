@@ -65,6 +65,7 @@ void CHECK_USER_ABORT(void)
 		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0)
 		{
 			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl;
+			_flushall();
 			_exit(EXIT_FAILURE);
 		}
 	}
