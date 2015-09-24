@@ -46,8 +46,8 @@ public:
 	std::wstring toString(void) const;
 
 	//Static Functions
-	static std::string urlEncode(const std::wstring &url);
-	static std::string urlEncode(const std::string  &url);
+	static std::wstring urlEncode(const std::wstring &url);
+	static std::string  urlEncode(const std::string  &url);
 
 private:
 	std::wstring m_strScheme;

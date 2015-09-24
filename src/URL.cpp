@@ -34,24 +34,13 @@
 // HELPER MACROS
 //=============================================================================
 
-#define INIT_URL_STRING_RAW(X) do \
+#define INIT_URL_STRING(X,Y) do \
 { \
-	m_str##X.clear(); \
-	if(components.dw##X##Length > 0U) \
+	m_str##Y.clear(); \
+	if(components.dw##Y##Length > 0U) \
 	{ \
-		std::wstring temp(components.lpsz##X, components.dw##X##Length); \
-		m_str##X = trim(temp); \
-	} \
-} \
-while(0)
-
-#define INIT_URL_STRING_ENC(X) do \
-{ \
-	m_str##X.clear(); \
-	if(components.dw##X##Length > 0U) \
-	{ \
-		std::wstring temp(components.lpsz##X, components.dw##X##Length); \
-		m_str##X = utf8_to_wide_str(urlEncode(trim(temp))); \
+		std::wstring temp(components.lpsz##Y, components.dw##Y##Length); \
+		m_str##Y = (X) ? trim(temp) : urlEncode(trim(temp)); \
 	} \
 } \
 while(0)
@@ -92,12 +81,12 @@ URL::URL(const std::wstring &url)
 
 	if(InternetCrackUrl(url.c_str(), 0, 0, &components))
 	{
-		INIT_URL_STRING_RAW(Scheme);
-		INIT_URL_STRING_RAW(HostName);
-		INIT_URL_STRING_RAW(UserName);
-		INIT_URL_STRING_RAW(Password);
-		INIT_URL_STRING_ENC(UrlPath);
-		INIT_URL_STRING_ENC(ExtraInfo);
+		INIT_URL_STRING(0, Scheme);
+		INIT_URL_STRING(0, HostName);
+		INIT_URL_STRING(0, UserName);
+		INIT_URL_STRING(0, Password);
+		INIT_URL_STRING(1, UrlPath);
+		INIT_URL_STRING(1, ExtraInfo);
 		m_iSchemeId = int16_t(components.nScheme);
 		m_uiPortNumber = components.nPort;
 	}
@@ -135,20 +124,18 @@ bool URL::isComplete(void) const
 // STATIC FUNCTIONS
 //=============================================================================
 
-std::string URL::urlEncode(const std::wstring &url)
+std::wstring URL::urlEncode(const std::wstring &url)
 {
-	const std::string url_utf8 = wide_str_to_utf8(url);
-	return url_utf8.empty() ? std::string() : urlEncode(url_utf8);
+	return utf8_to_wide_str(urlEncode(wide_str_to_utf8(url)));
 }
 
 std::string URL::urlEncode(const std::string &url)
 {
-	static const char *const ALLOWED_CHARS = "!#$&'()*+,-./:;=?@[]_~";
-
+	static const char *const ALLOWED_URL_CHARS = "!#$%&'()*+,-./:;=?@[\\]^_{|}";
 	std::ostringstream result;
 	for(std::string::const_iterator iter = url.cbegin(); iter != url.cend(); iter++)
 	{	
-		if(isalnum(*iter) || strchr(ALLOWED_CHARS, (*iter)))
+		if(isalnum(*iter) || strchr(ALLOWED_URL_CHARS, (*iter)))
 		{
 			result << (*iter);
 			continue;
