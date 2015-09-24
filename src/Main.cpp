@@ -317,10 +317,10 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
 {
 	//Initialize the post data string
-	const std::string post_data_utf8 = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? wide_str_to_utf8(post_data) : stdin_get_line());
+	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(post_data) : URL::urlEncode(stdin_get_line()));
 
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data_utf8, referrer))
+	if(!client->open(http_verb, url, post_data_encoded, referrer))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
@@ -392,7 +392,7 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Print request URL
-	std::wcerr << L"Request address:\n" << source << L'\n' << std::endl;
+	std::wcerr << L"Request address:\n" << url.toString() << L'\n' << std::endl;
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;

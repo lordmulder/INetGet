@@ -41,8 +41,13 @@ public:
 	inline const std::wstring &getExtraInfo(void) const { return m_strExtraInfo; }
 	inline const uint16_t     &getPortNo   (void) const { return m_uiPortNumber; }
 
-	//Complete?
+	//Public Functions
 	bool isComplete(void) const;
+	std::wstring toString(void) const;
+
+	//Static Functions
+	static std::string urlEncode(const std::wstring &url);
+	static std::string urlEncode(const std::string  &url);
 
 private:
 	std::wstring m_strScheme;

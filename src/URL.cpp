@@ -25,19 +25,40 @@
 #include <Windows.h>
 #include <WinINet.h>
 #include <vector>
+#include <sstream>
+#include <iomanip>
 
 #include "Utils.h"
 
-#define INIT_URL_STRING(X) do \
+//=============================================================================
+// HELPER MACROS
+//=============================================================================
+
+#define INIT_URL_STRING_RAW(X) do \
 { \
 	m_str##X.clear(); \
 	if(components.dw##X##Length > 0U) \
 	{ \
-		std::wstring temp(std::wstring(components.lpsz##X, components.dw##X##Length)); \
+		std::wstring temp(components.lpsz##X, components.dw##X##Length); \
 		m_str##X = trim(temp); \
 	} \
 } \
 while(0)
+
+#define INIT_URL_STRING_ENC(X) do \
+{ \
+	m_str##X.clear(); \
+	if(components.dw##X##Length > 0U) \
+	{ \
+		std::wstring temp(components.lpsz##X, components.dw##X##Length); \
+		m_str##X = utf8_to_wide_str(urlEncode(trim(temp))); \
+	} \
+} \
+while(0)
+
+//=============================================================================
+// CONSTRUCTOR
+//=============================================================================
 
 URL::URL(const URL &other)
 :
@@ -71,12 +92,12 @@ URL::URL(const std::wstring &url)
 
 	if(InternetCrackUrl(url.c_str(), 0, 0, &components))
 	{
-		INIT_URL_STRING(Scheme);
-		INIT_URL_STRING(HostName);
-		INIT_URL_STRING(UserName);
-		INIT_URL_STRING(Password);
-		INIT_URL_STRING(UrlPath);
-		INIT_URL_STRING(ExtraInfo);
+		INIT_URL_STRING_RAW(Scheme);
+		INIT_URL_STRING_RAW(HostName);
+		INIT_URL_STRING_RAW(UserName);
+		INIT_URL_STRING_RAW(Password);
+		INIT_URL_STRING_ENC(UrlPath);
+		INIT_URL_STRING_ENC(ExtraInfo);
 		m_iSchemeId = int16_t(components.nScheme);
 		m_uiPortNumber = components.nPort;
 	}
@@ -86,6 +107,21 @@ URL::~URL()
 {
 }
 
+//=============================================================================
+// PUBLIC FUNCTIONS
+//=============================================================================
+
+std::wstring URL::toString(void) const
+{
+	std::wostringstream result;
+	result << m_strScheme;
+	result << L"://";
+	result << m_strHostName;
+	result << m_strUrlPath;
+	result << m_strExtraInfo;
+	return result.str();
+}
+
 bool URL::isComplete(void) const
 {
 	if(m_strHostName.empty() || m_strUrlPath .empty())
@@ -93,4 +129,34 @@ bool URL::isComplete(void) const
 		return false;
 	}
 	return (m_iSchemeId > 0);
+}
+
+//=============================================================================
+// STATIC FUNCTIONS
+//=============================================================================
+
+std::string URL::urlEncode(const std::wstring &url)
+{
+	const std::string url_utf8 = wide_str_to_utf8(url);
+	return url_utf8.empty() ? std::string() : urlEncode(url_utf8);
+}
+
+std::string URL::urlEncode(const std::string &url)
+{
+	static const char *const ALLOWED_CHARS = "!#$&'()*+,-./:;=?@[]_~";
+
+	std::ostringstream result;
+	for(std::string::const_iterator iter = url.cbegin(); iter != url.cend(); iter++)
+	{	
+		if(isalnum(*iter) || strchr(ALLOWED_CHARS, (*iter)))
+		{
+			result << (*iter);
+			continue;
+		}
+		const std::ios::fmtflags backup(result.flags());
+		result << '%' << std::setw(2) << std::setfill('0') << std::hex << std::uppercase << static_cast<uint32_t>(static_cast<uint8_t>(*iter));
+		result.flags(backup);
+	}
+
+	return result.str();
 }
