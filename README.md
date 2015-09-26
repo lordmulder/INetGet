@@ -44,12 +44,21 @@ The following *required* parameters must always be included:
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
   If the *port* number is absent, a default port number will be assumed. This results in port #21 for FTP, port #80 for HTTP and port #443 for HTTPS.
   The special URL string ``-`` may be specified in order to read the target address from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) encoding.<br>
-  URL Examples:
-    * `http://www.example.com/`
-    * `http://www.google.com/search?q=drunkship+of+lanterns`
-    * `http://173.194.112.137/`
-    * `http://[2a00:1450:4001:804::1005]/`
-    * `http://alice:jelly22fi$h@localhost:8080/top_secret.php?document=42`
+  ***Examples:***
+    * A minimal URL:  
+      `http://www.example.com/`
+
+    * URL including *path* and *query string*:  
+      `http://www.google.com/search?q=drunkship+of+lanterns`
+
+    * URL that has the *hostname* specified as an IPv4 address and that contains an explicit *port* number:  
+      `http://173.194.112.137:8080/`
+
+    * URL that has the *hostname* specified as an IPv6 address:  
+      `http://[2a00:1450:4001:804::1005]/`
+
+    * URL that has a *username* and a *password* specified:  
+    `http://alice:jelly22fi$h@localhost/top_secret.doc`
 
 * **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
@@ -210,6 +219,8 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 * Correctly show file size and remaining time for files larger than 4 GB.
 
 * The *path* and the *query* components of the URL as well as the *POST data* string are now converted to [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) and then [*percent-encoded*](https://en.wikipedia.org/wiki/Percent-encoding).
+
+* Added support for setting options via configuration file.
 
 ### Version 1.00 (2015-09-21) ###
 
