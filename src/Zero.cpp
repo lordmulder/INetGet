@@ -79,7 +79,12 @@ static void setup_error_handlers(void)
 	SetErrorMode(SEM_FAILCRITICALERRORS | SEM_NOOPENFILEERRORBOX);
 	SetUnhandledExceptionFilter(my_exception_handler);
 	_set_invalid_parameter_handler(my_invalid_param_handler);
-	SetDllDirectoryW(L""); /*don'tload DLL from "current" directory*/
+
+	typedef BOOL (WINAPI *SetDllDirectoryPtr)(LPCWSTR lpPathName);
+	if(const SetDllDirectoryPtr set_dll_directory = (SetDllDirectoryPtr) GetProcAddress(GetModuleHandle(L"kernel32.dll"), "SetDllDirectoryW"))
+	{
+		set_dll_directory(L""); /*don'tload DLL from "current" directory*/
+	}
 }
 
 #endif //NDEBUG

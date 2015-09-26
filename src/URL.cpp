@@ -26,6 +26,7 @@
 #include <vector>
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 #include "Utils.h"
 
@@ -36,7 +37,7 @@
 #define INIT_URL_STRING(X,Y) do \
 { \
 	m_str##Y.clear(); \
-	if(components.dw##Y##Length > 0U) \
+	if(components.lpsz##Y && (components.dw##Y##Length > 0U)) \
 	{ \
 		std::wstring temp(components.lpsz##Y, components.dw##Y##Length); \
 		m_str##Y = (X) ? Utils::trim(temp) : urlEncode(Utils::trim(temp)); \
