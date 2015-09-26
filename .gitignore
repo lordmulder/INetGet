@@ -8,3 +8,4 @@ z_paths.bat
 *.user
 *.local.*
 /ipch
+/src/*.ori
