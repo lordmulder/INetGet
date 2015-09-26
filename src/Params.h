@@ -31,7 +31,8 @@ public:
 	Params(void);
 	~Params(void);
 
-	bool initialize(const int argc, const wchar_t *const argv[]);
+	bool parse_cli_args(const int argc, const wchar_t *const argv[]);
+	bool load_conf_file(const std::wstring &config_file);
 
 	//Getter
 	inline const std::wstring &getSource       (void) const { return m_strSource;     }
@@ -52,7 +53,8 @@ public:
 	inline const bool         &getForceCrl     (void) const { return m_bForceCrl;     }
 
 private:
-	bool validate(void);
+	bool validate(const bool &is_final);
+	bool load_conf_file(const std::wstring &config_file, const bool &recursive);
 
 	bool processParamN(const size_t n, const std::wstring &param);
 	bool processOption(const std::wstring &option);

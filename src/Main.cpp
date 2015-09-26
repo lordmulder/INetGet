@@ -83,7 +83,7 @@ static void print_logo(void)
 		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << ", " << BUILD_COMP << ", Win-" << BUILD_ARCH << ", " << BUILD_CONF << '\n' << std::endl;
 	std::wcout.flags(stateBackup);
 
-	const time_t build_time = decode_date_str(BUILD_DATE);
+	const time_t build_time = Utils::decode_date_str(BUILD_DATE);
 	if(build_time > 0)
 	{
 		const time_t now = time(NULL);
@@ -121,6 +121,7 @@ static void print_help_screen(void)
 		<< L"  --retry=<n>   : Specifies the max. number of connection attempts\n"
 		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
 		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
+		<< L"  --config=<cf> : Read INetGet options from specified configuration file(s)\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
@@ -172,7 +173,7 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 {
 	static const wchar_t *const UNSPECIFIED = L"<N/A>";
 
-	std::wcerr << L"--> Status code: "      << status_code << L" [" << status_to_string(status_code) << "]\n";
+	std::wcerr << L"--> Status code: "      << status_code << L" [" << Utils::status_to_string(status_code) << "]\n";
 	std::wcerr << L"--> Content type: "     << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
 	std::wcerr << L"--> Content encoding: " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
 	std::wcerr << L"--> Length (bytes): "   << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L'\n';
@@ -198,32 +199,32 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 					const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
 					if(time_left > 3)
 					{
-						std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, " << second_to_string(time_left) << " remaining...";
+						std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, " << Utils::second_to_string(time_left) << " remaining...";
 					}
 					else
 					{
-						std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, almost finished...";
+						std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, almost finished...";
 					}
 				}
 				else
 				{
-					std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
+					std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, please stand by...";
 				}
 			}
 			else
 			{
-				std::wcerr << percent << "% of " << nbytes_to_string(double(file_size)) << " received, please stand by...";
+				std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, please stand by...";
 			}
 		}
 		else
 		{
 			if(!ISNAN(current_rate))
 			{
-				std::wcerr << nbytes_to_string(double(total_bytes)) << " received, " << nbytes_to_string(current_rate) << "/s, please stand by...";
+				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, please stand by...";
 			}
 			else
 			{
-				std::wcerr << nbytes_to_string(double(total_bytes)) << " received, please stand by...";
+				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << " received, please stand by...";
 			}
 		}
 
@@ -310,14 +311,14 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	sink->close();
 
 	TRIGGER_SYSTEM_SOUND(alert, true);
-	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? second_to_string(total_time) : L"no time") << " (avg. rate: " << nbytes_to_string(average_rate) << "/s).\n" << std::endl;
+	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? Utils::second_to_string(total_time) : L"no time") << " (avg. rate: " << Utils::nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
 static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
 {
 	//Initialize the post data string
-	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
+	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
 
 	//Create the HTTPS connection/request
 	if(!client->open(http_verb, url, post_data_encoded, referrer))
@@ -366,10 +367,23 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 {
 	//Print application info
 	print_logo();
-	
-	//Parse command-line parameters
+
+	//Initialize parameters
 	Params params;
-	if(!params.initialize(argc, argv))
+
+	//Load configuration file, if it exists
+	const std::wstring config_file = Utils::exe_path(L".cfg");
+	if(Utils::file_exists(config_file))
+	{
+		if(!params.load_conf_file(config_file))
+		{
+			std::wcerr << "Invalid configuration file, refer to the documentation for details!\n" << std::endl;
+			return EXIT_FAILURE;
+		}
+	}
+
+	//Parse command-line parameters
+	if(!params.parse_cli_args(argc, argv))
 	{
 		std::wcerr << "Invalid command-line arguments, type \"INetGet.exe --help\" for details!\n" << std::endl;
 		return EXIT_FAILURE;
@@ -383,7 +397,7 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Parse the specified source URL
-	const std::wstring source = (params.getSource().compare(L"-") == 0) ? utf8_to_wide_str(stdin_get_line()) : params.getSource();
+	const std::wstring source = (params.getSource().compare(L"-") == 0) ? Utils::utf8_to_wide_str(stdin_get_line()) : params.getSource();
 	URL url(source);
 	if(!url.isComplete())
 	{

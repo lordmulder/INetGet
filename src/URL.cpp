@@ -40,7 +40,7 @@
 	if(components.dw##Y##Length > 0U) \
 	{ \
 		std::wstring temp(components.lpsz##Y, components.dw##Y##Length); \
-		m_str##Y = (X) ? trim(temp) : urlEncode(trim(temp)); \
+		m_str##Y = (X) ? Utils::trim(temp) : urlEncode(Utils::trim(temp)); \
 	} \
 } \
 while(0)
@@ -126,7 +126,7 @@ bool URL::isComplete(void) const
 
 std::wstring URL::urlEncode(const std::wstring &url)
 {
-	return utf8_to_wide_str(urlEncode(wide_str_to_utf8(url)));
+	return Utils::utf8_to_wide_str(urlEncode(Utils::wide_str_to_utf8(url)));
 }
 
 std::string URL::urlEncode(const std::string &url)

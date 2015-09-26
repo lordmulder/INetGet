@@ -30,6 +30,8 @@
 #include <stdexcept>
 #include <iostream>
 #include <limits>
+#include <fstream>
+#include <memory>
 
 //=============================================================================
 // UTILITIES
@@ -38,7 +40,7 @@
 static inline std::wstring argv_i(const wchar_t *const argv[], const int i)
 {
 	std::wstring temp(argv[i]);
-	return trim(temp);
+	return Utils::trim(temp);
 }
 
 #define IS_OPTION(X) (option_key.compare(L##X) == 0)
@@ -129,7 +131,7 @@ Params::~Params()
 // PARSE PARAMETERS
 //=============================================================================
 
-bool Params::initialize(const int argc, const wchar_t *const argv[])
+bool Params::parse_cli_args(const int argc, const wchar_t *const argv[])
 {
 	const std::wstring marker(L"--");
 
@@ -146,7 +148,7 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 				if(current.length() > marker.length())
 				{
 					std::wstring option(current.substr(2, std::wstring::npos));
-					if(!processOption(trim(option)))
+					if(!processOption(Utils::trim(option)))
 					{
 						return false;
 					}
@@ -174,12 +176,21 @@ bool Params::initialize(const int argc, const wchar_t *const argv[])
 		}
 	}
 		
-	return validate();
+	return validate(true);
 }
 
-bool Params::validate(void)
+bool Params::load_conf_file(const std::wstring &config_file)
 {
-	if((m_strSource.empty() || m_strOutput.empty()) && (!m_bShowHelp))
+	return load_conf_file(config_file, false);
+}
+
+//=============================================================================
+// INTERNAL FUNCTIONS
+//=============================================================================
+
+bool Params::validate(const bool &is_final)
+{
+	if(is_final && (m_strSource.empty() || m_strOutput.empty()) && (!m_bShowHelp))
 	{
 		std::wcerr << L"ERROR: Required parameter is missing!\n" << std::endl;
 		return false;
@@ -197,18 +208,69 @@ bool Params::validate(void)
 		return false;
 	}
 
-	if(m_bInsecure)
+	if(is_final && m_bInsecure)
 	{
 		std::wcerr << L"WARNING: Using insecure HTTPS mode, certificates will *not* be checked!\n";
 	}
 
-	if((!m_strPostData.empty()) && (m_iHttpVerb != HTTP_POST) && (m_iHttpVerb != HTTP_PUT))
+	if(is_final && (!m_strPostData.empty()) && (m_iHttpVerb != HTTP_POST) && (m_iHttpVerb != HTTP_PUT))
 	{
 		std::wcerr << L"WARNING: Sending 'x-www-form-urlencoded' data, but HTTP verb is not POST/PUT!\n";
 		std::wcerr << L"         You probably want to add the \"--verb=post\" or \"--verb=put\" argument.\n" << std::endl;
 	}
 
 	return true;
+}
+
+bool Params::load_conf_file(const std::wstring &config_file, const bool &recursive)
+{
+	static const size_t BUFF_SIZE = 16384;
+	std::unique_ptr<wchar_t[]> buffer(new wchar_t[BUFF_SIZE]);
+
+	std::wstring current_file;
+	size_t offset = 0;
+	while(Utils::next_token(config_file, L'|', current_file, offset))
+	{
+		std::wcerr << L"Reading file \"" << current_file << L"\"\n" << std::endl;
+
+		std::wifstream stream;
+		stream.open(current_file);
+		if(!stream.good())
+		{
+			const errno_t error = errno;
+			std::wcerr << L"Failed to open configuration file for reading:\n" << current_file << L"\n\nERROR: " << Utils::crt_error_string(error) << L'\n' << std::endl;
+			return false;
+		}
+
+		while(stream.good())
+		{
+			stream.getline(buffer.get(), BUFF_SIZE);
+			if(stream.bad() || (stream.fail() && (!stream.eof())))
+			{
+				std::wcerr << L"Failed to read next line from configuration file:\n" << current_file << L'\n' << std::endl;
+				stream.close();
+				return false; /*file read error*/
+			}
+
+			std::wstring temp(buffer.get());
+			if(!Utils::trim(temp).empty())
+			{
+				if((temp.front() == L'#') || (temp.front() == L';'))
+				{
+					continue; /*comment line detected*/
+				}
+				if(!processOption(temp))
+				{
+					stream.close();
+					return false;
+				}
+			}
+		}
+
+		stream.close();
+	}
+
+	return recursive ? true : validate(false);
 }
 
 bool Params::processParamN(const size_t n, const std::wstring &param)
@@ -340,6 +402,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bVerboseMode = true);
+	}
+	else if(IS_OPTION("config"))
+	{
+		ENSURE_VALUE();
+		return load_conf_file(option_val, true);
 	}
 
 	std::wcerr << L"ERROR: Unknown option \"--" << option_key << "\" encountered!\n" << std::endl;

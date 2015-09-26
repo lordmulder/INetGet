@@ -59,7 +59,7 @@ bool FileSink::open(void)
 	if(_wfopen_s(&hFile, m_fileName.c_str(), L"wb") != 0)
 	{
 		const int error_code = errno;
-		std::wcerr << L"The specified output file could not be opened for writing:\n" << crt_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"The specified output file could not be opened for writing:\n" << Utils::crt_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -96,7 +96,7 @@ bool FileSink::write(uint8_t *const buffer, const size_t &count)
 				if(bytesWritten != count)
 				{
 					const int error_code = errno;
-					std::wcerr << L"\b\b\bfailed!\n\nAn I/O error occurred while trying to write to output file:\n" << crt_error_string(error_code) << L'\n' << std::endl;
+					std::wcerr << L"\b\b\bfailed!\n\nAn I/O error occurred while trying to write to output file:\n" << Utils::crt_error_string(error_code) << L'\n' << std::endl;
 					return false;
 				}
 				return true;

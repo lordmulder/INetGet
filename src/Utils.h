@@ -25,30 +25,48 @@
 #include <string>
 #include <stdint.h>
 
-static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
+namespace Utils
+{
+	static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
-std::wstring &trim(std::wstring &str);
+	std::wstring &trim(std::wstring &str);
+	bool next_token(const std::wstring &str, const wchar_t &sep, std::wstring &token, size_t &offset);
 
-std::wstring win_error_string(const uint32_t &error_code);
-std::wstring crt_error_string(const int      &error_code);
-std::wstring status_to_string(const uint32_t &rspns_code);
+	std::wstring exe_path(const std::wstring &suffix = std::wstring());
+	bool file_exists(const std::wstring &path);
 
-std::wstring nbytes_to_string(const double &count);
-std::wstring second_to_string(const double &count);
+	std::wstring win_error_string(const uint32_t &error_code);
+	std::wstring crt_error_string(const int      &error_code);
+	std::wstring status_to_string(const uint32_t &rspns_code);
 
-std::string wide_str_to_utf8(const std::wstring &str);
-std::wstring utf8_to_wide_str(const std::string &str);
+	std::wstring nbytes_to_string(const double &count);
+	std::wstring second_to_string(const double &count);
 
-void trigger_system_sound(const bool &success);
+	std::string wide_str_to_utf8(const std::wstring &str);
+	std::wstring utf8_to_wide_str(const std::string &str);
 
-time_t decode_date_str(const char *const date_str);
+	void trigger_system_sound(const bool &success);
+	bool check_user_abort_flag(void);
+
+	time_t decode_date_str(const char *const date_str);
+}
 
 
 #define TRIGGER_SYSTEM_SOUND(X,Y) do \
 { \
 	if((X))  \
 	{ \
-		trigger_system_sound((Y)); \
+		Utils::trigger_system_sound((Y)); \
+	} \
+} \
+while(0)
+
+#define CHECK_USER_ABORT() do \
+{ \
+	if(Utils::check_user_abort_flag()) \
+	{ \
+		_flushall(); \
+		_exit(EXIT_FAILURE); \
 	} \
 } \
 while(0)
@@ -68,4 +86,4 @@ double ROUND(const double &d);
 
 #define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
 
-void CHECK_USER_ABORT(void);
+

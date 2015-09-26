@@ -53,7 +53,7 @@ The following *required* parameters must always be included:
     * URL including *path* and *query string*:  
       `http://www.google.com/search?q=drunkship+of+lanterns`
 
-    * URL that has the *hostname* specified as an IPv4 address and that contains an explicit *port* number:  
+    * URL that has the *hostname* specified as an IPv4 address and that contains a *port* number:  
       `http://173.194.112.137:8080/`
 
     * URL that has the *hostname* specified as an IPv6 address:  
@@ -115,6 +115,9 @@ The following options *may* be included, in an arbitrary order:
   If specified, causes the connection to fail in case that the [*certificate revocation list*](https://en.wikipedia.org/wiki/Revocation_list) (CRL) could *not* be retrieved. This is more secure, but also means that HTTPS connections may fail more often.
   By default, INetGet *does* check for certificate revocations. However, if the CRL can *not* be retrieved for some reason (and thus the revocation check is impossible), it will skip the check.
 
+* **`--config=<cf>`**  
+  Load additional INetGet options from the specified configuration file. Several configuration files may be specified, in which case the "pipe" (`|`) symbol is used as a file name separator.
+
 * **`--help`**  
   If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
 
@@ -146,6 +149,15 @@ Here are some basic examples that show the command-line usage of INetGet:
 
 * Read the URL from *stdin* and write the response to *stout*:  
   `echo http://www.warr.org/buckethead.html | INetGet.exe - - | findstr Sacrifist`
+
+
+## Configuration Files ##
+
+INetGet supports reading options from a *configuration* file. Configuration files can be loaded *explicitly* by using the `--config=<cf>` option on the command-line. In addition, INetGet will *implicitly* load a configuration file that is located in the same directory as the INetGet executable file and that has the same [*basename*](https://en.wikipedia.org/wiki/Basename) as the NetGet executable, but with a `.cfg` file extension. So, e.g., if the INetGet executable file is called `INetGet.exe`, then the configuration file called `INetGet.cfg` (and located in the same directory) will be loaded *implicitly*, if existing.
+
+Configuration files support the same options that can be specified on the command-line. Furthermore, the option syntax for configuration files is the same as on the command-line, except that configuration files do **not** require or support the `--` option prefix. This means that, e.g., instead of `--agent=Foo`, the configuration file has to contain `agent=Foo`. Finally, INetGet expects that there is exactly *one* option per line in the configuration file. Any lines starting with a "hash" (`#`) symbol are considered to be comments and will be ignored. Blank lines are ignored too.
+
+Note: If a configuration file is loaded *implicitly*, this occurs **before** processing the options given on the command-line. Consequently, you can use the implicitly-loaded configuration file to set up some default options, which then may be overwritten on the command-line.
 
 
 ## Anti-Virus Notes ##
@@ -216,13 +228,13 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## Changelog ##
 
-### Version 1.01 (????-??-??) ###
+### Version 1.01 (2015-09-26) ###
 
-* Correctly show file size and remaining time for files larger than 4 GB.
+* Correctly show file size and remaining time for files larger than 4 GB, provided that the server sent a ``Content-Length`` field.
 
 * The *path* and the *query* components of the URL as well as the *POST data* string are now converted to [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) and then [*percent-encoded*](https://en.wikipedia.org/wiki/Percent-encoding).
 
-* Added support for setting options via configuration file.
+* Added support for setting INetGet options via configuration files. Use `--config=<cf>` option to load a configuration file.
 
 ### Version 1.00 (2015-09-21) ###
 

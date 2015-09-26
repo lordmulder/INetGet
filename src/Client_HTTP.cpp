@@ -159,7 +159,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(m_hConnection == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -167,7 +167,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&status_callback)) == INTERNET_INVALID_STATUS_CALLBACK)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << L"--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -189,7 +189,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << L"--> Failed!\n\nHttpOpenRequest() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"--> Failed!\n\nHttpOpenRequest() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -231,7 +231,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 			std::wcerr << L"--> Connection has failed. Retrying! [" << retry_counter << L'/' << m_connect_retry << ']' << std::endl;
 			goto label_retry_create_request;
 		}
-		std::wcerr << L"--> Failed!\n\nFailed to connect to the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << L"--> Failed!\n\nFailed to connect to the server:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 	
@@ -291,7 +291,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t 
 	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "\b\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "\b\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 
@@ -377,7 +377,7 @@ bool HttpClient::get_header_int(void *const request, const uint32_t type, uint32
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "HttpQueryInfo() has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 	}
 
 	return false;
@@ -392,14 +392,14 @@ bool HttpClient::get_header_str(void *const request, const uint32_t type, std::w
 	if(HttpQueryInfo(request, type, &result, &resultSize, 0) == TRUE)
 	{
 		std::wstring temp(result);
-		value = trim(temp);
+		value = Utils::trim(temp);
 		return (!value.empty());
 	}
 
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "HttpQueryInfo() has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 	}
 
 	value.clear();

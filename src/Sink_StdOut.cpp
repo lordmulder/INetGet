@@ -79,7 +79,7 @@ bool StdOutSink::write(uint8_t *const buffer, const size_t &count)
 			if(bytesWritten < count)
 			{
 				const int error_code = errno;
-				std::wcerr << L"An I/O error occurred while trying to write to STDOUT:\n" << crt_error_string(error_code) << L'\n' << std::endl;
+				std::wcerr << L"An I/O error occurred while trying to write to STDOUT:\n" << Utils::crt_error_string(error_code) << L'\n' << std::endl;
 				return false;
 			}
 		}

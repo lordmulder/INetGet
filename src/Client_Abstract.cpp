@@ -71,7 +71,15 @@ bool AbstractClient::wininet_init()
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
-			std::wcerr << "InternetOpen() has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+			std::wcerr << "InternetOpen() has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		}
+
+		//Query version info
+		DWORD versionInfoSize = sizeof(INTERNET_VERSION_INFO);
+		INTERNET_VERSION_INFO versionInfo;
+		if(m_verbose && InternetQueryOption(m_hInternet, INTERNET_OPTION_VERSION, &versionInfo, &versionInfoSize))
+		{
+			std::wcerr << L"Using WinINet API library version " << versionInfo.dwMajorVersion << L'.'<< versionInfo.dwMinorVersion << L'\n' << std::endl;
 		}
 
 		//Setup the connection and receive timeouts
@@ -195,7 +203,7 @@ bool AbstractClient::set_inet_options(void *const request, const uint32_t &optio
 	if(!InternetSetOption(request, option, (LPVOID)&value, sizeof(uint32_t)))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetSetOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetSetOption() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 	return true;
@@ -207,7 +215,7 @@ bool AbstractClient::get_inet_options(void *const request, const uint32_t &optio
 	if(!InternetQueryOption(request, option, (LPVOID)&value, &buff_len))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetQueryOption() function has failed:\n" << win_error_string(error_code) << L'\n' << std::endl;
+		std::wcerr << "--> Failed!\n\nInternetQueryOption() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
 		return false;
 	}
 	return (buff_len >= sizeof(uint32_t));

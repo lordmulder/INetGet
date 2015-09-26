@@ -58,17 +58,17 @@ double ROUND(const double &d)
 // CHECK USER ABORT
 //=============================================================================
 
-void CHECK_USER_ABORT(void)
+bool Utils::check_user_abort_flag(void)
 {
 	if(g_userAbortEvent)
 	{
 		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0)
 		{
 			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl;
-			_flushall();
-			_exit(EXIT_FAILURE);
+			return true;
 		}
 	}
+	return false;
 }
 
 //=============================================================================
@@ -116,9 +116,88 @@ static std::wstring &trim_l(std::wstring &str)
 	return str;
 }
 
-std::wstring &trim(std::wstring &str)
+std::wstring &Utils::trim(std::wstring &str)
 {
 	return trim_l(trim_r(str));
+}
+
+//=============================================================================
+// TOKENIZE STRING
+//=============================================================================
+
+bool Utils::next_token(const std::wstring &str, const wchar_t &sep, std::wstring &token, size_t &offset)
+{
+	while(offset < str.length())
+	{
+		const size_t pos = str.find_first_of(sep, offset);
+		token = str.substr(offset, (pos != std::wstring::npos) ? (pos - offset) : std::wstring::npos);
+		offset = (pos != std::wstring::npos) ? (pos + 1) : std::wstring::npos;
+		if(!(trim(token).empty()))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+//=============================================================================
+// EXECUTABLE PATH
+//=============================================================================
+
+static std::wstring &clean_path(std::wstring &path)
+{
+	size_t pos = size_t(-1);
+	while((pos = path.find_first_of(L'/')) != std::wstring::npos)
+	{
+		path[pos] = L'\\';
+	}
+
+	return path;
+}
+
+static std::wstring &add_suffix(std::wstring &path, const std::wstring &suffix)
+{
+	const size_t pos_sep = path.find_last_of(L'\\');
+	const size_t pos_dot = path.find_last_of(L'.');
+
+	if((pos_dot != std::wstring::npos) && ((pos_sep == std::wstring::npos) || (pos_dot > pos_sep)))
+	{
+		path.erase(pos_dot);
+	}
+
+	return path.append(suffix);
+}
+
+std::wstring Utils::exe_path(const std::wstring &suffix)
+{
+	static const size_t BUFF_SIZE = 2048;
+	wchar_t buffer[BUFF_SIZE];
+
+	const DWORD ret = GetModuleFileNameW(NULL, buffer, BUFF_SIZE);
+	if((ret > 0) && (ret < BUFF_SIZE))
+	{
+		std::wstring temp(buffer);
+		if(clean_path(trim(temp)).length() > 0)
+		{
+			return suffix.empty() ? temp : add_suffix(temp, suffix);
+		}
+	}
+
+	return std::wstring(); /*something went wrong!*/
+}
+
+//=============================================================================
+// CHECK FILE EXISTENCE
+//=============================================================================
+
+bool Utils::file_exists(const std::wstring &path)
+{
+	if(!path.empty())
+	{
+		return (GetFileAttributesW(path.c_str()) != INVALID_FILE_ATTRIBUTES);
+	}
+
+	return false;
 }
 
 //=============================================================================
@@ -144,7 +223,7 @@ static std::wstring &fixup_error_msg(std::wstring &error_msg, const uint32_t &er
 	return error_msg;
 }
 
-std::wstring win_error_string(const uint32_t &error_code)
+std::wstring Utils::win_error_string(const uint32_t &error_code)
 {
 	std::wstring result;
 	if(error_code)
@@ -172,7 +251,7 @@ std::wstring win_error_string(const uint32_t &error_code)
 	return fixup_error_msg(result, error_code);
 }
 
-std::wstring crt_error_string(const int &error_code)
+std::wstring Utils::crt_error_string(const int &error_code)
 {
 	std::wstring result;
 	static const size_t BUFFSIZE = 2048;
@@ -190,7 +269,7 @@ std::wstring crt_error_string(const int &error_code)
 // STATUS CODE TO STRING
 //=============================================================================
 
-std::wstring status_to_string(const uint32_t &rspns_code)
+std::wstring Utils::status_to_string(const uint32_t &rspns_code)
 {
 	for(size_t i = 0; STATUS_CODES[i].info; i++)
 	{
@@ -206,7 +285,7 @@ std::wstring status_to_string(const uint32_t &rspns_code)
 // STRING FORMATTING
 //=============================================================================
 
-std::wstring nbytes_to_string(const double &count)
+std::wstring Utils::nbytes_to_string(const double &count)
 {
 	const wchar_t *const UNITS[] =
 	{
@@ -233,7 +312,7 @@ std::wstring nbytes_to_string(const double &count)
 	return str.str();
 }
 
-std::wstring second_to_string(const double &count)
+std::wstring Utils::second_to_string(const double &count)
 {
 	const double COUNT[] =
 	{
@@ -279,7 +358,7 @@ std::wstring second_to_string(const double &count)
 // WIDE STRING <--> UTF-8 STRING
 //=============================================================================
 
-std::string wide_str_to_utf8(const std::wstring &input)
+std::string Utils::wide_str_to_utf8(const std::wstring &input)
 {
 	std::string result;
 
@@ -303,7 +382,7 @@ std::string wide_str_to_utf8(const std::wstring &input)
 	return result;
 }
 
-std::wstring utf8_to_wide_str(const std::string &input)
+std::wstring Utils::utf8_to_wide_str(const std::string &input)
 {
 	std::wstring result;
 
@@ -331,7 +410,7 @@ std::wstring utf8_to_wide_str(const std::string &input)
 // NOTIFICATION SOUND
 //=============================================================================
 
-void trigger_system_sound(const bool &success)
+void Utils::trigger_system_sound(const bool &success)
 {
 	PlaySound((LPCTSTR)(success ? SND_ALIAS_SYSTEMASTERISK : SND_ALIAS_SYSTEMHAND), NULL, SND_ALIAS_ID | SND_SYNC | SND_SYSTEM);
 }
@@ -358,7 +437,7 @@ static int month_str2int(const char *str)
 	return ret;
 }
 
-time_t decode_date_str(const char *const date_str) //Mmm dd yyyy
+time_t Utils::decode_date_str(const char *const date_str) //Mmm dd yyyy
 {
 	tm date_time;
 	memset(&date_time, 0, sizeof(tm));
