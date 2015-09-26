@@ -38,7 +38,7 @@ The basic *command-line syntax* of INetGet is extremely simple:
 The following *required* parameters must always be included:
 
 * **`<target_address>`**  
-  Specifies the target *Internet address* (URL) to be downloaded. The URL must be in the ``<scheme>://<username>:<password>@<hostname>:<port>/<path>?<query>`` format.
+  Specifies the target *Internet address* (URL) to be downloaded, in the <tt>&lt;scheme&gt;<span style="color:firebrick;font-weight:bold">://</span>[&lt;username&gt;[<span style="color:firebrick">:</span>&lt;password&gt;]@]&lt;hostname&gt;[<span style="color:firebrick">:</span>&lt;port&gt;]<span style="color:firebrick;font-weight:bold">/</span>&lt;path&gt;[<span style="color:firebrick">?</span>&lt;query&gt;]</tt> format.
   The *scheme* (protocol), *hostname* and *path* must always be specified. The *username* and *password* as well as the *port* number and the *query* string are optional.
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
   If the *port* number is absent, a default port number will be assumed. This means port #21 for FTP, port #80 for HTTP and port #443 for HTTPS. The *path* may be a single `/` character.
