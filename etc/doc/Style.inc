@@ -11,5 +11,6 @@
   a:hover { color: #0000FF; text-decoration: underline; }
   figure { margin-left: 0em; margin-bottom: 1.66em; }
   figcaption { font-size: 0.8em; font-weight: bold; }
+  body>ul>li+li { margin-top: 1.666em; }
 -->
 </style>

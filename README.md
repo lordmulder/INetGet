@@ -38,16 +38,23 @@ The basic *command-line syntax* of INetGet is extremely simple:
 The following *required* parameters must always be included:
 
 * **`<target_address>`**  
-  Specifies the target *Internet address* (URL) to be downloaded, in the <tt>&lt;scheme&gt;<span style="color:firebrick;font-weight:bold">://</span>[&lt;username&gt;[<span style="color:firebrick">:</span>&lt;password&gt;]@]&lt;hostname&gt;[<span style="color:firebrick">:</span>&lt;port&gt;]<span style="color:firebrick;font-weight:bold">/</span>&lt;path&gt;[<span style="color:firebrick">?</span>&lt;query&gt;]</tt> format.
-  The *scheme* (protocol), *hostname* and *path* must always be specified. The *username* and *password* as well as the *port* number and the *query* string are optional.
+  Specifies the target *Internet address* (URL) to be downloaded, given in the <tt>&lt;scheme&gt;<span style="color:firebrick;font-weight:bold">://</span>[&lt;username&gt;[<span style="color:blue">:</span>&lt;password&gt;]<span style="color:blue">@</span>]&lt;hostname&gt;[<span style="color:blue">:</span>&lt;port&gt;]<span style="color:firebrick;font-weight:bold">/</span>[&lt;path&gt;][<span style="color:blue">?</span>&lt;query&gt;]</tt> format.
+  The *scheme* (protocol) and the *hostname* components of the URL must always be specified! The *path* component as well as the *port* number and the *query* string are optional.
+  Also, the *username* and the *password* components are optional too, but you can **not** set a *password* without *username*. Last but not least, do **not** forget the trailing `/` if the given the *path* is empty!<br>
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
-  If the *port* number is absent, a default port number will be assumed. This means port #21 for FTP, port #80 for HTTP and port #443 for HTTPS. The *path* may be a single `/` character.
-  The special string ``-`` may be specified in order to read the target address from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) encoding.
+  If the *port* number is absent, a default port number will be assumed. This results in port #21 for FTP, port #80 for HTTP and port #443 for HTTPS.
+  The special URL string ``-`` may be specified in order to read the target address from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) encoding.<br>
+  URL Examples:
+    * `http://www.example.com/`
+    * `http://www.google.com/search?q=drunkship+of+lanterns`
+    * `http://173.194.112.137/`
+    * `http://[2a00:1450:4001:804::1005]/`
+    * `http://alice:jelly22fi$h@localhost:8080/top_secret.php?document=42`
 
 * **`<output_file>`**  
   Specifies the output file, where the downloaded file will be written to. If the given path specification is *not* [fully-qualified](https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247%28v=vs.85%29.aspx#fully_qualified_vs._relative_paths), then the relative path will be resolved starting from the "current" directory.
   The given path must point to an *existing* and *writable* directory, otherwise the download fails. If the specified file already exists, the program will try to *overwrite* the existing file!
-  The special file name ``-`` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Also the special file name ``NUL`` may be specified in order to discard all data that is received.
+  The special file name `-` may be specified in order to write all received data to the [*stdout*](https://en.wikipedia.org/wiki/Standard_streams#Standard_output_.28stdout.29) stream. Furthermore, the special file name `NUL` may be specified in order to discard all data that is received.
 
 ### Options ###
 
@@ -118,7 +125,7 @@ Here are some basic examples that show the command-line usage of INetGet:
  `INetGet.exe http://www.warr.org/buckethead.html output.html`
 
 * Send request with query string:  
-  `INetGet.exe http://www.google.de/search?q=drunkship+of+lanterns output.html`
+  `INetGet.exe http://www.google.com/search?q=drunkship+of+lanterns output.html`
 
 * Send request with "POST" method and form data included:  
   `INetGet.exe --verb=POST --data="foo=hello&bar=world" http://muldersoft.sourceforge.net/test.php output.txt`
