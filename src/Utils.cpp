@@ -186,6 +186,69 @@ std::wstring Utils::exe_path(const std::wstring &suffix)
 }
 
 //=============================================================================
+// SET CONSOLE TITLE
+//=============================================================================
+
+static volatile LONG g_console_init = 1;
+static const HWND g_console_hwnd = GetConsoleWindow();
+static HICON g_original_console_icon = NULL;
+static std::wstring  g_original_console_title;
+
+static bool set_console_icon(const HICON icon, HICON &original_icon)
+{
+	if(g_console_hwnd)
+	{
+		original_icon = (HICON) SendMessage(g_console_hwnd, WM_SETICON, ICON_SMALL, LPARAM(icon));
+		return true;
+	}
+	return false;
+}
+
+static HICON load_icon(const wchar_t *const name)
+{
+	return (HICON) LoadImage(GetModuleHandle(NULL), name, IMAGE_ICON, 16, 16, LR_DEFAULTCOLOR);
+}
+
+static void restore_console_title()
+{
+	if(!g_original_console_title.empty())
+	{
+		SetConsoleTitleW(g_original_console_title.c_str());
+	}
+	if(g_original_console_icon)
+	{
+		HICON ignore_icon = NULL;
+		set_console_icon(g_original_console_icon, ignore_icon);
+	}
+}
+
+void Utils::set_console_title(const std::wstring &title)
+{
+	static const size_t MAX_LENGTH = 384;
+
+	if(g_console_hwnd)
+	{
+		if(InterlockedExchange(&g_console_init, 0))
+		{
+			if(wchar_t *const buffer = (wchar_t*)_malloca(sizeof(wchar_t) * MAX_LENGTH))
+			{
+				if(GetConsoleTitleW(buffer, MAX_LENGTH) > 0)
+				{
+					g_original_console_title = std::wstring(buffer);
+					atexit(restore_console_title);
+				}
+				_freea(buffer);
+			}
+			if(const HICON icon = load_icon(L"INETGET"))
+			{
+				set_console_icon(icon, g_original_console_icon);
+			}
+		}
+		SetConsoleTitleW((title.length() > MAX_LENGTH) ? title.substr(0, MAX_LENGTH).c_str() : title.c_str());
+	}
+}
+
+//=============================================================================
 // CHECK FILE EXISTENCE
 //=============================================================================
 

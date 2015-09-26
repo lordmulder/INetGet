@@ -23,6 +23,7 @@
 
 //Internal
 #include "URL.h"
+#include "Slunk.h"
 #include "Utils.h"
 
 //CRT
@@ -401,6 +402,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bVerboseMode = true);
+	}
+	else if(IS_OPTION("slunk"))
+	{
+		ENSURE_NOVAL();
+		return (m_bVerboseMode = slunk_handler());
 	}
 	else if(IS_OPTION("config"))
 	{

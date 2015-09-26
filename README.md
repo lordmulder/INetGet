@@ -234,7 +234,10 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 * The *path* and the *query* components of the URL as well as the *POST data* string are now converted to [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) and then [*percent-encoded*](https://en.wikipedia.org/wiki/Percent-encoding).
 
+* Update console window title in order to show the current INetGet progress. Restores original title on exit.
+
 * Added support for setting INetGet options via configuration files. Use `--config=<cf>` option to load a configuration file.
+
 
 ### Version 1.00 (2015-09-21) ###
 

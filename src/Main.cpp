@@ -122,6 +122,7 @@ static void print_help_screen(void)
 		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
 		<< L"  --config=<cf> : Read INetGet options from specified configuration file(s)\n"
 		<< L"  --help        : Show this help screen\n"
+		<< L"  --slunk       : Enable slunk mode, this is intended for kendo master only\n"
 		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
 		<< L"Examples:\n"
@@ -179,7 +180,7 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 	std::wcerr << std::endl;
 }
 
-static inline void print_progress(const uint64_t &total_bytes, const uint64_t &file_size, Timer &timer_update, const double &current_rate, uint8_t &index, const bool &force = false)
+static inline void print_progress(const std::wstring url_string, uint64_t &total_bytes, const uint64_t &file_size, Timer &timer_update, const double &current_rate, uint8_t &index, const bool &force = false)
 {
 	static const wchar_t SPINNER[4] = { L'-', L'\\', L'/', L'-' };
 
@@ -191,6 +192,7 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 		if(file_size != AbstractClient::SIZE_UNKNOWN)
 		{
 			const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
+
 			if(!ISNAN(current_rate))
 			{
 				if(current_rate > 0.0)
@@ -198,33 +200,41 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 					const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
 					if(time_left > 3)
 					{
-						std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, " << Utils::second_to_string(time_left) << " remaining...";
+						std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, " << Utils::second_to_string(time_left) << L" remaining...";
 					}
 					else
 					{
-						std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, almost finished...";
+						std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, almost finished...";
 					}
 				}
 				else
 				{
-					std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, please stand by...";
+					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
 				}
 			}
 			else
 			{
-				std::wcerr << percent << "% of " << Utils::nbytes_to_string(double(file_size)) << " received, please stand by...";
+				std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, please stand by...";
 			}
+
+			std::wostringstream title;
+			title << std::setprecision(1) << std::fixed << std::setw(0) << L"INetGet [" << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L"] - " << url_string;
+			Utils::set_console_title(title.str());
 		}
 		else
 		{
 			if(!ISNAN(current_rate))
 			{
-				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << " received, " << Utils::nbytes_to_string(current_rate) << "/s, please stand by...";
+				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
 			}
 			else
 			{
-				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << " received, please stand by...";
+				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, please stand by...";
 			}
+
+			std::wostringstream title;
+			title << L"INetGet [" << Utils::nbytes_to_string(double(total_bytes)) << L"] - " << url_string;
+			Utils::set_console_title(title.str());
 		}
 
 		std::wcerr << "    " << std::flush;
@@ -237,7 +247,7 @@ static inline void print_progress(const uint64_t &total_bytes, const uint64_t &f
 // PROCESS
 //=============================================================================
 
-static int transfer_file(AbstractClient *const client, const uint64_t &file_size, const std::wstring &outFileName, const bool &alert)
+static int transfer_file(AbstractClient *const client, const std::wstring &url_string, const uint64_t &file_size, const std::wstring &outFileName, const bool &alert)
 {
 	//Open output file
 	std::unique_ptr<AbstractSink> sink;
@@ -262,7 +272,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
-	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
+	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
 
 	//Download file
 	while(!eof_flag)
@@ -300,10 +310,10 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 		}
 
 		CHECK_USER_ABORT();
-		print_progress(total_bytes, file_size, timer_update, current_rate, index);
+		print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index);
 	}
 
-	print_progress(total_bytes, file_size, timer_update, current_rate, index, true);
+	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
 
 	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
@@ -314,7 +324,7 @@ static int transfer_file(AbstractClient *const client, const uint64_t &file_size
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
+static int retrieve_url(AbstractClient *const client, const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
@@ -355,7 +365,7 @@ static int retrieve_url(AbstractClient *const client, const http_verb_t &http_ve
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(client, file_size, outFileName, alert);
+	return transfer_file(client, url_string, file_size, outFileName, alert);
 }
 
 //=============================================================================
@@ -405,7 +415,9 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Print request URL
+	const std::wstring url_string = url.toString();
 	std::wcerr << L"Request address:\n" << url.toString() << L'\n' << std::endl;
+	Utils::set_console_title(std::wstring(L"INetGet - ").append(url_string));
 
 	//Create the HTTP(S) client
 	std::unique_ptr<AbstractClient> client;
@@ -416,5 +428,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getEnableAlert());
+	return retrieve_url(client.get(), url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getEnableAlert());
 }

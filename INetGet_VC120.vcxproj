@@ -29,6 +29,7 @@
     <ClCompile Include="src\Sink_File.cpp" />
     <ClCompile Include="src\Sink_Null.cpp" />
     <ClCompile Include="src\Sink_StdOut.cpp" />
+    <ClCompile Include="src\Slunk.cpp" />
     <ClCompile Include="src\Timer.cpp" />
     <ClCompile Include="src\Types.cpp" />
     <ClCompile Include="src\URL.cpp" />
@@ -45,6 +46,7 @@
     <ClInclude Include="src\Sink_File.h" />
     <ClInclude Include="src\Sink_Null.h" />
     <ClInclude Include="src\Sink_StdOut.h" />
+    <ClInclude Include="src\Slunk.h" />
     <ClInclude Include="src\Timer.h" />
     <ClInclude Include="src\Types.h" />
     <ClInclude Include="src\URL.h" />
@@ -143,7 +145,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4510;4512;4610;4706</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4510;4512;4610;4706;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -159,7 +161,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
-      <DisableSpecificWarnings>4127;4510;4512;4610;4706</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4510;4512;4610;4706;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -181,7 +183,7 @@
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
       <TreatWarningAsError>true</TreatWarningAsError>
-      <DisableSpecificWarnings>4127;4510;4512;4610;4706</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4510;4512;4610;4706;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -208,7 +210,7 @@
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <CreateHotpatchableImage>false</CreateHotpatchableImage>
-      <DisableSpecificWarnings>4127;4510;4512;4610;4706</DisableSpecificWarnings>
+      <DisableSpecificWarnings>4127;4510;4512;4610;4706;4996</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

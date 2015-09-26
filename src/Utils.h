@@ -34,6 +34,8 @@ namespace Utils
 	std::wstring exe_path(const std::wstring &suffix = std::wstring());
 	bool file_exists(const std::wstring &path);
 
+	void set_console_title(const std::wstring &title);
+
 	std::wstring win_error_string(const uint32_t &error_code);
 	std::wstring crt_error_string(const int      &error_code);
 	std::wstring status_to_string(const uint32_t &rspns_code);
@@ -64,8 +66,7 @@ while(0)
 { \
 	if(Utils::check_user_abort_flag()) \
 	{ \
-		_flushall(); \
-		_exit(EXIT_FAILURE); \
+		exit(EXIT_FAILURE); \
 	} \
 } \
 while(0)
@@ -84,5 +85,3 @@ double ROUND(const double &d);
 #define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))
 
 #define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
-
-

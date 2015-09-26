@@ -16,96 +16,120 @@
     <Filter Include="Resource Files\data">
       <UniqueIdentifier>{824fad5a-8688-4c8d-b241-21524a311030}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\IO">
+      <UniqueIdentifier>{eaeadb5a-06bc-4f59-9825-914e4eeb64c0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\IO">
+      <UniqueIdentifier>{2f50a9cf-3fae-418f-a6a3-a5c72119daaf}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Utilties">
+      <UniqueIdentifier>{91702e3d-4c5a-4f3a-9098-a7219744efaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Utilities">
+      <UniqueIdentifier>{10bbf51a-54e9-4e51-89f2-f9b8f7a4dc50}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Client">
+      <UniqueIdentifier>{6e637c83-d194-45f8-b3a6-142d6ba965db}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Client">
+      <UniqueIdentifier>{96891b88-f5a4-4128-a055-3a695a88b04e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\URL.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Utils.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\Params.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Client_Abstract.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Client_HTTP.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Sink_File.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Sink_Abstract.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Sink_StdOut.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Sink_Null.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Types.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Average.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Timer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Zero.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Average.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Timer.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Types.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\URL.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sink_StdOut.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sink_Abstract.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sink_File.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Sink_Null.cpp">
+      <Filter>Source Files\IO</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Client_HTTP.cpp">
+      <Filter>Source Files\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Client_Abstract.cpp">
+      <Filter>Source Files\Client</Filter>
+    </ClCompile>
     <ClCompile Include="src\Client_FTP.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Client</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Slunk.cpp">
+      <Filter>Source Files\Utilities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\URL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Utils.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Params.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Version.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Client_Abstract.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Client_HTTP.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Types.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\Sink_Abstract.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="src\Sink_File.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Sink_Abstract.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Sink_StdOut.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="src\Sink_Null.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\IO</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sink_StdOut.h">
+      <Filter>Header Files\IO</Filter>
     </ClInclude>
     <ClInclude Include="src\Average.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Utilties</Filter>
     </ClInclude>
     <ClInclude Include="src\Timer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Types.h">
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils.h">
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\URL.h">
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Client_HTTP.h">
+      <Filter>Header Files\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Client_Abstract.h">
+      <Filter>Header Files\Client</Filter>
     </ClInclude>
     <ClInclude Include="src\Client_FTP.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Client</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Slunk.h">
+      <Filter>Header Files\Utilties</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
