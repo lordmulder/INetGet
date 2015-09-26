@@ -40,10 +40,12 @@ The following *required* parameters must always be included:
 * **`<target_address>`**  
   Specifies the target *Internet address* (URL) to be downloaded, given in the <tt>&lt;scheme&gt;<span style="color:firebrick;font-weight:bold">://</span>[&lt;username&gt;[<span style="color:blue">:</span>&lt;password&gt;]<span style="color:blue">@</span>]&lt;hostname&gt;[<span style="color:blue">:</span>&lt;port&gt;]<span style="color:firebrick;font-weight:bold">/</span>[&lt;path&gt;][<span style="color:blue">?</span>&lt;query&gt;]</tt> format.
   The *scheme* (protocol) and the *hostname* components of the URL must always be specified! The *path* component as well as the *port* number and the *query* string are optional.
-  Also, the *username* and the *password* components are optional too, but you can **not** set a *password* without *username*. Last but not least, do **not** forget the trailing `/` if the given the *path* is empty!<br>
+  Also, the *username* and the *password* components are optional too, but you can **not** set a *password* without *username*. Last but not least, do **not** forget the trailing `/` if the given the *path* is empty!  
+  &nbsp;  
   Only the ``http``, ``https`` and ``ftp`` protocols are currently supported. The *hostname* can be specified either as a domain name or as an IP address. The standard [IPv4](https://en.wikipedia.org/wiki/Dot-decimal_notation#IPv4_address) and [IPv6](https://en.wikipedia.org/wiki/IPv6_address#Recommended_representation_as_text) notations are supported.
   If the *port* number is absent, a default port number will be assumed. This results in port #21 for FTP, port #80 for HTTP and port #443 for HTTPS.
-  The special URL string ``-`` may be specified in order to read the target address from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) encoding.<br>
+  The special URL string ``-`` may be specified in order to read the target address from the [*stdin*](https://en.wikipedia.org/wiki/Standard_streams#Standard_input_.28stdin.29) stream. When reading the URL from *stdin*, INetGet assumes that the string is passed in [*UTF-8*](https://en.wikipedia.org/wiki/UTF-8) encoding.  
+  &nbsp;  
   ***Examples:***
     * A minimal URL:  
       `http://www.example.com/`
