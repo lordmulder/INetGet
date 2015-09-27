@@ -115,8 +115,20 @@ The following options *may* be included, in an arbitrary order:
   If specified, causes the connection to fail in case that the [*certificate revocation list*](https://en.wikipedia.org/wiki/Revocation_list) (CRL) could *not* be retrieved. This is more secure, but also means that HTTPS connections may fail more often.
   By default, INetGet *does* check for certificate revocations. However, if the CRL can *not* be retrieved for some reason (and thus the revocation check is impossible), it will skip the check.
 
+* **`--set-ftime`**  
+  If specified, INetGet will change the "Creation" and the "LastWrite" time-stamp of the output file to the value that was returned in the `Last-Modified` field of the HTTP response header.
+  This option is typically (though not necessarily) used in conjunction with the `--update` option. If the server did **not** include a `Last-Modified` field, this option does nothing.
+
+* **`--update`**  
+  If specified, **update** mode is enabled. In this mode, INetGet will *only* re-download the file and replace the output file, iff the server provides a *newer* version. Otherwise, the existing file is kept.
+  Update mode is implemented by reading the "LastWrite" time-stamp of the existing output file. If successful, a corresponding `If-Modified-Since` field is added to the HTTP request.
+  The server *should* reject the request with status `304` (Not Modified), if **no** newer version is available. If the specified output file does **not** exist, INetGet will downloaded the file unconditionally.
+
+* **`--keep-failed`**  
+  If specified, INetGet will retain an *incomplete* output file, if the download has failed or it has been aborted. Otherwise, INetGet tries to delete the *incomplete* file, if something went wrong.
+
 * **`--config=<cf>`**  
-  Load additional INetGet options from the specified configuration file. Several configuration files may be specified, in which case the "pipe" (`|`) symbol is used as a file name separator.
+  Loads additional INetGet options from the specified configuration file. Several configuration files can be specified, in which case the "pipe" (`|`) symbol must be used as a file name separator.
 
 * **`--help`**  
   If this option is present, INetGet will print the "help screen" to the console and then exit immediately.
