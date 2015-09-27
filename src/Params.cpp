@@ -213,13 +213,18 @@ bool Params::validate(const bool &is_final)
 
 	if(is_final && m_bInsecure)
 	{
-		std::wcerr << L"WARNING: Using insecure HTTPS mode, certificates will *not* be checked!\n";
+		std::wcerr << L"WARNING: Using insecure HTTPS mode, certificates will *not* be checked!\n" << std::endl;
 	}
 
 	if(is_final && (!m_strPostData.empty()) && (m_iHttpVerb != HTTP_POST) && (m_iHttpVerb != HTTP_PUT))
 	{
 		std::wcerr << L"WARNING: Sending 'x-www-form-urlencoded' data, but HTTP verb is not POST/PUT!\n";
 		std::wcerr << L"         You probably want to add the \"--verb=post\" or \"--verb=put\" argument.\n" << std::endl;
+	}
+
+	if(is_final && m_bUpdateMode && (!m_bSetTimestamp))
+	{
+		std::wcerr << L"WARNING: Update mode enabled, but \"--set-ftime\" option *not* currently set!\n" << std::endl;
 	}
 
 	return true;
