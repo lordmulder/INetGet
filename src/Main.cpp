@@ -120,6 +120,7 @@ static void print_help_screen(void)
 		<< L"  --retry=<n>   : Specifies the max. number of connection attempts\n"
 		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
 		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
+		<< L"  --set-ftime   : Set the file's Creation/LastWrite time to 'Last-Modified'\n"
 		<< L"  --config=<cf> : Read INetGet options from specified configuration file(s)\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --slunk       : Enable slunk mode, this is intended for kendo master only\n"
@@ -151,7 +152,7 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 	return !!client;
 }
 
-static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName)
+static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName, const uint64_t &timestamp)
 {
 	if(_wcsicmp(fileName.c_str(), L"-") == 0)
 	{
@@ -163,20 +164,21 @@ static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring 
 	}
 	else
 	{
-		sink.reset(new FileSink(fileName));
+		sink.reset(new FileSink(fileName, timestamp));
 	}
 
 	return sink ? sink->open() : false;
 }
 
-static void print_response_info(const uint32_t &status_code, const uint64_t &file_size,	const std::wstring &content_type, const std::wstring &content_encd)
+static void print_response_info(const uint32_t &status_code, const uint64_t &file_size,	const uint64_t &time_stamp, const std::wstring &content_type, const std::wstring &content_encd)
 {
 	static const wchar_t *const UNSPECIFIED = L"<N/A>";
 
-	std::wcerr << L"--> Status code: "      << status_code << L" [" << Utils::status_to_string(status_code) << "]\n";
-	std::wcerr << L"--> Content type: "     << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
-	std::wcerr << L"--> Content encoding: " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
-	std::wcerr << L"--> Length (bytes): "   << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L'\n';
+	std::wcerr << L"--> HTTP Status code : " << status_code << L" [" << Utils::status_to_string(status_code) << "]\n";
+	std::wcerr << L"--> Content type     : " << (content_type.empty() ? UNSPECIFIED : content_type) << L'\n';
+	std::wcerr << L"--> Content encoding : " << (content_encd.empty() ? UNSPECIFIED : content_encd) << L'\n';
+	std::wcerr << L"--> Content length   : " << ((file_size == AbstractClient::SIZE_UNKNOWN) ? UNSPECIFIED : std::to_wstring(file_size)) << L" Byte\n";
+	std::wcerr << L"--> Last modified TS : " << ((time_stamp == AbstractClient::TIME_UNKNOWN) ? UNSPECIFIED : Utils::timestamp_to_str(time_stamp)) << L'\n';
 	std::wcerr << std::endl;
 }
 
@@ -247,11 +249,11 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 // PROCESS
 //=============================================================================
 
-static int transfer_file(AbstractClient *const client, const std::wstring &url_string, const uint64_t &file_size, const std::wstring &outFileName, const bool &alert)
+static int transfer_file(AbstractClient *const client, const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert)
 {
 	//Open output file
 	std::unique_ptr<AbstractSink> sink;
-	if(!create_sink(sink, outFileName))
+	if(!create_sink(sink, outFileName, timestamp))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
@@ -324,7 +326,7 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &alert)
+static int retrieve_url(AbstractClient *const client, const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_timestamp, const bool &alert)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
@@ -340,12 +342,12 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 	//Initialize local variables
 	bool success;
 	uint32_t status_code;
-	uint64_t file_size;
 	std::wstring content_type, content_encd;
+	uint64_t file_size, timestamp;
 
 	//Query result information
 	CHECK_USER_ABORT();
-	if(!client->result(success, status_code, file_size, content_type, content_encd))
+	if(!client->result(success, status_code, file_size, timestamp, content_type, content_encd))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
@@ -354,7 +356,7 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 
 	//Print some status information
 	std::wcerr << L"HTTP response successfully received from server:\n";
-	print_response_info(status_code, file_size, content_type, content_encd);
+	print_response_info(status_code, file_size, timestamp, content_type, content_encd);
 
 	//Request successful?
 	if(!success)
@@ -365,7 +367,7 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(client, url_string, file_size, outFileName, alert);
+	return transfer_file(client, url_string, file_size, (set_timestamp ? timestamp : 0), outFileName, alert);
 }
 
 //=============================================================================
@@ -428,5 +430,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getEnableAlert());
+	return retrieve_url(client.get(), url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getEnableAlert());
 }

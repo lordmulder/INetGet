@@ -32,6 +32,7 @@ class AbstractClient
 {
 public:
 	static const uint64_t SIZE_UNKNOWN = UINT64_MAX;
+	static const uint64_t TIME_UNKNOWN = 0;
 
 	AbstractClient(const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~AbstractClient(void);
@@ -41,7 +42,7 @@ public:
 	virtual bool close(void) = 0;
 
 	//Fetch result
-	virtual bool result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd) = 0;
+	virtual bool result(bool &success, uint32_t &status_code, uint64_t &file_size, uint64_t &time_stamp, std::wstring &content_type, std::wstring &content_encd) = 0;
 
 	//Read payload
 	virtual bool read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag) = 0;
@@ -59,6 +60,7 @@ protected:
 	static bool close_handle(void *&handle);
 	static bool set_inet_options(void *const request, const uint32_t &option, const uint32_t &value);
 	static bool get_inet_options(void *const request, const uint32_t &option, uint32_t &value);
+	static std::wstring status_str(const uintptr_t &info);
 
 	//Const
 	const bool m_disable_proxy;

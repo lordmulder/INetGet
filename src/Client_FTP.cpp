@@ -111,7 +111,7 @@ bool FtpClient::close(void)
 // QUERY RESULT
 //=============================================================================
 
-bool FtpClient::result(bool& /*success*/, uint32_t& /*status_code*/, uint64_t& /*file_size*/, std::wstring& /*content_type*/, std::wstring& /*content_encd*/)
+bool FtpClient::result(bool& /*success*/, uint32_t& /*status_code*/, uint64_t& /*file_size*/, uint64_t& /*time_stamp*/, std::wstring& /*content_type*/, std::wstring& /*content_encd*/)
 {
 	throw std::runtime_error("FTP support *not* implemented in this version :-(");
 	//return false;

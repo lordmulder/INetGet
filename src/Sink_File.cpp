@@ -24,17 +24,35 @@
 //Internal
 #include "Utils.h"
 
+//Win32
+#define WIN32_LEAN_AND_MEAN 1
+#include <Windows.h>
+
 //CRT
 #include <cstdio>
 #include <iostream>
+#include <io.h>
+
+//=============================================================================
+// HELPER FUNCTIONS
+//=============================================================================
+
+static void uint64_to_filetime(const uint64_t &timestamp, FILETIME &filetime)
+{
+	ULARGE_INTEGER temp;
+	temp.QuadPart = timestamp;
+	filetime.dwHighDateTime = temp.HighPart;
+	filetime.dwLowDateTime  = temp.LowPart;
+}
 
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-FileSink::FileSink(const std::wstring &fileName)
+FileSink::FileSink(const std::wstring &fileName, const uint64_t &timestamp)
 :
 	m_handle(NULL),
+	m_timestamp(timestamp),
 	m_fileName(fileName)
 {
 }
@@ -72,6 +90,16 @@ bool FileSink::close(void)
 
 	if(FILE *const hFile = (FILE*)m_handle)
 	{
+		fflush(hFile);
+		if(m_timestamp > 0)
+		{
+			if(const HANDLE osHandle = (HANDLE) _get_osfhandle(_fileno(hFile)))
+			{
+				FILETIME filetime;
+				uint64_to_filetime(m_timestamp, filetime);
+				SetFileTime(osHandle, &filetime, NULL, &filetime);
+			}
+		}
 		success = (fclose(hFile) == 0);
 	}
 

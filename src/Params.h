@@ -50,6 +50,8 @@ public:
 	inline const uint32_t     &getRetryCount   (void) const { return m_uRetryCount;   }
 	inline const bool         &getVerboseMode  (void) const { return m_bVerboseMode;  }
 	inline const bool         &getForceCrl     (void) const { return m_bForceCrl;     }
+	inline const bool         &getSetTimestamp (void) const { return m_bSetTimestamp; }
+	
 
 private:
 	bool validate(const bool &is_final);
@@ -76,6 +78,7 @@ private:
 	double       m_dTimeoutRcv;
 	uint32_t     m_uRetryCount;
 	bool         m_bForceCrl;
+	bool         m_bSetTimestamp;
 	bool         m_bVerboseMode;
 };
 

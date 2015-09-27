@@ -29,7 +29,7 @@ namespace Utils
 	static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 	std::wstring &trim(std::wstring &str);
-	bool next_token(const std::wstring &str, const wchar_t &sep, std::wstring &token, size_t &offset);
+	bool next_token(const std::wstring &str, const wchar_t *sep, std::wstring &token, size_t &offset);
 
 	std::wstring exe_path(const std::wstring &suffix = std::wstring());
 	bool file_exists(const std::wstring &path);
@@ -49,6 +49,8 @@ namespace Utils
 	void trigger_system_sound(const bool &success);
 	bool check_user_abort_flag(void);
 
+	uint64_t parse_timestamp(const std::wstring &str);
+	std::wstring timestamp_to_str(const uint64_t &timestamp);
 	time_t decode_date_str(const char *const date_str);
 }
 

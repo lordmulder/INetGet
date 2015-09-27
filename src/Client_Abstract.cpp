@@ -219,3 +219,32 @@ bool AbstractClient::get_inet_options(void *const request, const uint32_t &optio
 	}
 	return (buff_len >= sizeof(uint32_t));
 }
+
+std::wstring AbstractClient::status_str(const uintptr_t &info)
+{
+	if(const char *const chr_data = (const char*) info)
+	{
+		if(isprint(chr_data[0]) && isprint(chr_data[1]))
+		{
+			std::wstring temp(Utils::utf8_to_wide_str(std::string(chr_data)));
+			if(Utils::trim(temp).length() > 0)
+			{
+				return temp;
+			}
+		}
+	}
+
+	if(const wchar_t *const wcs_data = (const wchar_t*) info)
+	{
+		if(iswprint(wcs_data[0]) && iswprint(wcs_data[1]))
+		{
+			std::wstring temp(wcs_data);
+			if(Utils::trim(temp).length() > 0)
+			{
+				return temp;
+			}
+		}
+	}
+
+	return std::wstring(L"<N/A>");
+}

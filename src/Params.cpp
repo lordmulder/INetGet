@@ -116,6 +116,7 @@ Params::Params(void)
 	m_bInsecure(false),
 	m_bEnableAlert(false),
 	m_bForceCrl(false),
+	m_bSetTimestamp(false),
 	m_bVerboseMode(false),
 	m_dTimeoutCon(std::numeric_limits<double>::quiet_NaN()),
 	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN()),
@@ -229,7 +230,7 @@ bool Params::load_conf_file(const std::wstring &config_file, const bool &recursi
 
 	std::wstring current_file;
 	size_t offset = 0;
-	while(Utils::next_token(config_file, L'|', current_file, offset))
+	while(Utils::next_token(config_file, L"|", current_file, offset))
 	{
 		std::wcerr << L"Reading file \"" << current_file << L"\"\n" << std::endl;
 
@@ -397,6 +398,11 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bForceCrl = true);
+	}
+	else if(IS_OPTION("set-ftime"))
+	{
+		ENSURE_NOVAL();
+		return (m_bSetTimestamp = true);
 	}
 	else if(IS_OPTION("verbose"))
 	{

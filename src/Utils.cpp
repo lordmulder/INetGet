@@ -124,13 +124,18 @@ std::wstring &Utils::trim(std::wstring &str)
 // TOKENIZE STRING
 //=============================================================================
 
-bool Utils::next_token(const std::wstring &str, const wchar_t &sep, std::wstring &token, size_t &offset)
+bool Utils::next_token(const std::wstring &str, const wchar_t *sep, std::wstring &token, size_t &offset)
 {
 	while(offset < str.length())
 	{
-		const size_t pos = str.find_first_of(sep, offset);
-		token = str.substr(offset, (pos != std::wstring::npos) ? (pos - offset) : std::wstring::npos);
-		offset = (pos != std::wstring::npos) ? (pos + 1) : std::wstring::npos;
+		size_t sep_pos = std::wstring::npos;
+		for(size_t i = 0; sep[i]; i++)
+		{
+			const size_t pos = str.find_first_of(sep, offset);
+			sep_pos = min(sep_pos, pos);
+		}
+		token = str.substr(offset, (sep_pos != std::wstring::npos) ? (sep_pos - offset) : std::wstring::npos);
+		offset = (sep_pos != std::wstring::npos) ? (sep_pos + 1) : std::wstring::npos;
 		if(!(trim(token).empty()))
 		{
 			return true;
@@ -481,12 +486,11 @@ void Utils::trigger_system_sound(const bool &success)
 // DECODE DATE
 //=============================================================================
 
-static const char *g_months_lut[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-
 static int month_str2int(const char *str)
 {
-	int ret = 0;
+	static const char *const g_months_lut[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
+	int ret = 0;
 	for(int j = 0; j < 12; j++)
 	{
 		if(!_strnicmp(str, g_months_lut[j], 3))
@@ -517,4 +521,147 @@ time_t Utils::decode_date_str(const char *const date_str) //Mmm dd yyyy
 	}
 
 	return mktime(&date_time);
+}
+
+//=============================================================================
+// PARSE TIME-STAMP
+//=============================================================================
+
+static uint64_t filetime_to_uint64(const FILETIME &filetime)
+{
+	ULARGE_INTEGER temp;
+	temp.HighPart = filetime.dwHighDateTime;
+	temp.LowPart  = filetime.dwLowDateTime;
+	return temp.QuadPart;
+}
+
+static void uint64_to_filetime(const uint64_t &timestamp, FILETIME &filetime)
+{
+	ULARGE_INTEGER temp;
+	temp.QuadPart = timestamp;
+	filetime.dwHighDateTime = temp.HighPart;
+	filetime.dwLowDateTime  = temp.LowPart;
+}
+
+static uint16_t parse_month_str(const std::wstring &str)
+{
+	static const wchar_t *const MONTH[] = { L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec", NULL };
+
+	for(size_t i = 0; MONTH[i]; i++)
+	{
+		if(!_wcsicmp(str.c_str(), MONTH[i]))
+		{
+			return WORD(i + 1);
+		}
+	}
+
+	throw std::invalid_argument("Not a valid month!");
+}
+
+static void parse_clock_str(uint16_t &hrs, uint16_t &min, uint16_t &sec, const std::wstring &str)
+{
+	std::wstring token;
+	size_t offset = 0;
+
+	for(size_t i = 0; Utils::next_token(str, L":", token, offset); i++)
+	{
+		switch(i)
+		{
+			case 0: hrs = (uint16_t) std::stoul(token); break;
+			case 1: min = (uint16_t) std::stoul(token); break;
+			case 2: sec = (uint16_t) std::stoul(token); break;
+		}
+	}
+}
+
+static WORD fixup_year(const WORD &year)
+{
+	if(year < 100)
+	{
+		time_t timeval;
+		if(time(&timeval))
+		{
+			struct tm systime;
+			if(gmtime_s(&systime, &timeval) == 0)
+			{
+				const WORD prefix = WORD((systime.tm_year + 1900) / 100);
+				return year + (100 * prefix);
+			}
+		}
+		return 2000 + year;
+	}
+	return year;
+}
+
+uint64_t Utils::parse_timestamp(const std::wstring &str)
+{
+	if(str.empty())
+	{
+		return NULL; /*string is empty*/
+	}
+
+	SYSTEMTIME systime;
+	memset(&systime, 0, sizeof(SYSTEMTIME));
+	
+	std::wstring token;
+	bool is_gmt = false;
+	size_t offset = 0;
+
+	try
+	{
+		for(size_t i = 0; Utils::next_token(str, L" ,-", token, offset); i++)
+		{
+			switch(i)
+			{
+				case 1: systime.wDay   = (WORD) std::stoul(token);                               break;
+				case 2: systime.wMonth = parse_month_str(token);                                 break;
+				case 3: systime.wYear  = fixup_year((WORD) std::stoul(token));                   break;
+				case 4:	parse_clock_str(systime.wHour, systime.wMinute, systime.wSecond, token); break;
+				case 5: is_gmt = (!_wcsicmp(token.c_str(), L"GMT"));                             break;
+			}
+		}
+	}
+	catch(std::exception&)
+	{
+		return NULL; /*parsing error*/
+	}
+
+	if(is_gmt)
+	{
+		FILETIME filetime;
+		memset(&filetime, 0, sizeof(FILETIME));
+
+		if(SystemTimeToFileTime(&systime, &filetime))
+		{
+			return filetime_to_uint64(filetime);
+		}
+	}
+
+	return NULL;
+}
+
+std::wstring Utils::timestamp_to_str(const uint64_t &timestamp)
+{
+	FILETIME filetime;
+	memset(&filetime, 0, sizeof(FILETIME));
+	
+	SYSTEMTIME systime;
+	memset(&systime, 0, sizeof(SYSTEMTIME));
+
+	uint64_to_filetime(timestamp, filetime);
+	if(FileTimeToSystemTime(&filetime, &systime))
+	{
+		wchar_t szLocalDate[256], szLocalTime[256];
+		bool okay = true;
+		okay = okay && GetDateFormat(LOCALE_INVARIANT, DATE_SHORTDATE, &systime, NULL, szLocalDate, 256);
+		okay = okay && GetTimeFormat(LOCALE_INVARIANT, 0,              &systime, NULL, szLocalTime, 256);
+		if(okay)
+		{
+			std::wostringstream str;
+			str << szLocalDate << L", " << szLocalTime;
+			return str.str();
+		}
+	}
+
+	return std::wstring();
 }

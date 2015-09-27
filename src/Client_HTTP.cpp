@@ -242,11 +242,12 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 // QUERY RESULT
 //=============================================================================
 
-bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, std::wstring &content_type, std::wstring &content_encd)
+bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, uint64_t &time_stamp, std::wstring &content_type, std::wstring &content_encd)
 {
 	success = false;
 	status_code = 0;
 	file_size = SIZE_UNKNOWN;
+	time_stamp = TIME_UNKNOWN;
 	content_type.clear();
 	content_encd.clear();
 
@@ -261,14 +262,20 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_siz
 		return false; /*couldn't get status code*/
 	}
 
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE,     content_type);
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd);
+
 	std::wstring content_length;
 	if(get_header_str(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
 	{
 		file_size = parse_file_size(content_length);
 	}
 
-	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE,     content_type);
-	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd);
+	std::wstring last_modified;
+	if(get_header_str(m_hRequest, HTTP_QUERY_LAST_MODIFIED, last_modified))
+	{
+		time_stamp = Utils::parse_timestamp(last_modified);
+	}
 
 	success = ((status_code >= 200) && (status_code < 300));
 	return true;
@@ -308,21 +315,18 @@ void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
 	AbstractClient::update_status(status, info);
 	if(m_current_status != status)
 	{
-		bool processed = false;
 		switch(status)
 		{
-			case INTERNET_STATUS_DETECTING_PROXY:      processed = true; std::wcerr << "--> Detetcing proxy server..."                      << std::endl; break;
-			case INTERNET_STATUS_RESOLVING_NAME:       processed = true; std::wcerr << "--> Resolving host name..."                         << std::endl; break;
-			case INTERNET_STATUS_NAME_RESOLVED:        processed = true; std::wcerr << "--> Server address resolved to: " << ((LPCSTR)info) << std::endl; break;
-			case INTERNET_STATUS_CONNECTING_TO_SERVER: processed = true; std::wcerr << "--> Connecting to server..."                        << std::endl; break;
-			case INTERNET_STATUS_SENDING_REQUEST:      processed = true; std::wcerr << "--> Sending request to server..."                   << std::endl; break;
-			case INTERNET_STATUS_REDIRECT:             processed = true; std::wcerr << "--> Redirecting: " << ((PCTSTR)info)                << std::endl; break;
-			case INTERNET_STATUS_RECEIVING_RESPONSE:   processed = true; std::wcerr << "--> Request sent, awaiting response..."             << std::endl; break;
+			case INTERNET_STATUS_DETECTING_PROXY:      std::wcerr << "--> Detetcing proxy server..."                        << std::endl; break;
+			case INTERNET_STATUS_RESOLVING_NAME:       std::wcerr << "--> Resolving host name..."                           << std::endl; break;
+			case INTERNET_STATUS_NAME_RESOLVED:        std::wcerr << "--> Server address resolved to: " << status_str(info) << std::endl; break;
+			case INTERNET_STATUS_CONNECTING_TO_SERVER: std::wcerr << "--> Connecting to server..."                          << std::endl; break;
+			case INTERNET_STATUS_SENDING_REQUEST:      std::wcerr << "--> Sending request to server..."                     << std::endl; break;
+			case INTERNET_STATUS_REDIRECT:             std::wcerr << "--> Redirecting: " << status_str(info)                << std::endl; break;
+			case INTERNET_STATUS_RECEIVING_RESPONSE:   std::wcerr << "--> Request sent, awaiting response..."               << std::endl; break;
+			default: return; /*unknown code*/
 		}
-		if(processed)
-		{
-			m_current_status = status;
-		}
+		m_current_status = status;
 	}
 }
 
@@ -422,3 +426,5 @@ uint64_t HttpClient::parse_file_size(const std::wstring &str)
 		return SIZE_UNKNOWN; /*parsing error*/
 	}
 }
+
+
