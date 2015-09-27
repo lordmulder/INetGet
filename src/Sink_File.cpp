@@ -31,35 +31,23 @@
 //CRT
 #include <cstdio>
 #include <iostream>
-#include <io.h>
-
-//=============================================================================
-// HELPER FUNCTIONS
-//=============================================================================
-
-static void uint64_to_filetime(const uint64_t &timestamp, FILETIME &filetime)
-{
-	ULARGE_INTEGER temp;
-	temp.QuadPart = timestamp;
-	filetime.dwHighDateTime = temp.HighPart;
-	filetime.dwLowDateTime  = temp.LowPart;
-}
 
 //=============================================================================
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-FileSink::FileSink(const std::wstring &fileName, const uint64_t &timestamp)
+FileSink::FileSink(const std::wstring &fileName, const uint64_t &timestamp, const bool &keepFailed)
 :
 	m_handle(NULL),
 	m_timestamp(timestamp),
-	m_fileName(fileName)
+	m_fileName(fileName),
+	m_keepFailed(keepFailed)
 {
 }
 
 FileSink::~FileSink(void)
 {
-	close();
+	close(false);
 }
 
 //=============================================================================
@@ -69,7 +57,7 @@ FileSink::~FileSink(void)
 bool FileSink::open(void)
 {
 	//Close existign file, just to be sure
-	close();
+	close(false);
 
 	//Try to open the file now
 	FILE *hFile = NULL;
@@ -84,27 +72,29 @@ bool FileSink::open(void)
 	return true;
 }
 
-bool FileSink::close(void)
+bool FileSink::close(const bool &success)
 {
-	bool success = true;
+	bool okay = true;
 
 	if(FILE *const hFile = (FILE*)m_handle)
 	{
-		fflush(hFile);
-		if(m_timestamp > 0)
+		if(success && (m_timestamp > 0))
 		{
-			if(const HANDLE osHandle = (HANDLE) _get_osfhandle(_fileno(hFile)))
-			{
-				FILETIME filetime;
-				uint64_to_filetime(m_timestamp, filetime);
-				SetFileTime(osHandle, &filetime, NULL, &filetime);
-			}
+			fflush(hFile);
+			Utils::set_file_time(_fileno(hFile), m_timestamp);
 		}
-		success = (fclose(hFile) == 0);
+	
+		okay = (fclose(hFile) == 0);
+
+		if((!success) && (!m_keepFailed))
+		{
+			_wremove(m_fileName.c_str());
+		}
 	}
 
+
 	m_handle = NULL;
-	return success;
+	return okay;
 }
 
 //=============================================================================

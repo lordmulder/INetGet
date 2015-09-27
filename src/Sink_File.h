@@ -29,17 +29,19 @@
 class FileSink : public AbstractSink
 {
 public:
-	FileSink(const std::wstring &fileName, const uint64_t &timestamp = 0);
+	FileSink(const std::wstring &fileName, const uint64_t &timestamp = 0, const bool &keepFailed = false);
 	virtual ~FileSink(void);
 
 	virtual bool open(void);
-	virtual bool close(void);
+	virtual bool close(const bool &success);
 
 	virtual bool write(uint8_t *const buffer, const size_t &count);
 
 private:
 	const uint64_t m_timestamp;
 	const std::wstring m_fileName;
+	const bool m_keepFailed;
+
 	uintptr_t m_handle;
 };
 

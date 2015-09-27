@@ -47,6 +47,10 @@
 #include <sstream>
 #include <algorithm>
 
+//Globals
+static std::unique_ptr<AbstractClient> g_client;
+static std::unique_ptr<AbstractSink>   g_sink;
+
 //=============================================================================
 // INTERNAL FUNCTIONS
 //=============================================================================
@@ -65,7 +69,7 @@ static std::wstring build_version_string(void)
 	std::wostringstream str;
 	if(VERSION_PATCH > 0)
 	{
-		str << std::setw(0) << VERSION_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VERSION_MINOR << L'_' << std::setw(0) << VERSION_PATCH;
+		str << std::setw(0) << VERSION_MAJOR << L'.' << std::setfill(L'0') << std::setw(2) << VERSION_MINOR << L'-' << std::setw(0) << VERSION_PATCH;
 	}
 	else
 	{
@@ -121,6 +125,8 @@ static void print_help_screen(void)
 		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
 		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
 		<< L"  --set-ftime   : Set the file's Creation/LastWrite time to 'Last-Modified'\n"
+		<< L"  --update      : Update (replace) local file, iff server has newer version\n"
+		<< L"  --keep-failed : Keep the incomplete output file, when download has failed\n"
 		<< L"  --config=<cf> : Read INetGet options from specified configuration file(s)\n"
 		<< L"  --help        : Show this help screen\n"
 		<< L"  --slunk       : Enable slunk mode, this is intended for kendo master only\n"
@@ -152,7 +158,7 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t
 	return !!client;
 }
 
-static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName, const uint64_t &timestamp)
+static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName, const uint64_t &timestamp, const bool &keep_failed)
 {
 	if(_wcsicmp(fileName.c_str(), L"-") == 0)
 	{
@@ -164,7 +170,7 @@ static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring 
 	}
 	else
 	{
-		sink.reset(new FileSink(fileName, timestamp));
+		sink.reset(new FileSink(fileName, timestamp, keep_failed));
 	}
 
 	return sink ? sink->open() : false;
@@ -249,11 +255,10 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 // PROCESS
 //=============================================================================
 
-static int transfer_file(AbstractClient *const client, const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert)
+static int transfer_file(const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
 {
 	//Open output file
-	std::unique_ptr<AbstractSink> sink;
-	if(!create_sink(sink, outFileName, timestamp))
+	if(!create_sink(g_sink, outFileName, timestamp, keep_failed))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
@@ -282,10 +287,11 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 		size_t bytes_read = 0;
 
 		CHECK_USER_ABORT();
-		if(!client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
+		if(!g_client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
 		{
-			TRIGGER_SYSTEM_SOUND(alert, false);
 			std::wcerr << "ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
+			g_sink->close(false);
+			TRIGGER_SYSTEM_SOUND(alert, false);
 			return EXIT_FAILURE;
 		}
 
@@ -303,10 +309,11 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 				transferred_bytes = 0ui64;
 			}
 
-			if(!sink->write(buffer.get(), bytes_read))
+			if(!g_sink->write(buffer.get(), bytes_read))
 			{
-				TRIGGER_SYSTEM_SOUND(alert, false);
 				std::wcerr << "ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
+				g_sink->close(false);
+				TRIGGER_SYSTEM_SOUND(alert, false);
 				return EXIT_FAILURE;
 			}
 		}
@@ -319,20 +326,27 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
 
 	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
-	sink->close();
+	g_sink->close(true);
 
 	TRIGGER_SYSTEM_SOUND(alert, true);
 	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? Utils::second_to_string(total_time) : L"no time") << " (avg. rate: " << Utils::nbytes_to_string(average_rate) << "/s).\n" << std::endl;
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(AbstractClient *const client, const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_timestamp, const bool &alert)
+static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
 
+	//Detect filestamp of existing file
+	const uint64_t timestamp_existing = update_mode ? Utils::get_file_time(outFileName) : AbstractClient::TIME_UNKNOWN;
+	if(update_mode && (timestamp_existing == AbstractClient::TIME_UNKNOWN))
+	{
+		std::wcerr << L"WARNING: Local file does not exist yet, going to download unconditionally!\n" << std::endl;
+	}
+
 	//Create the HTTPS connection/request
-	if(!client->open(http_verb, url, post_data_encoded, referrer))
+	if(!g_client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
@@ -347,11 +361,20 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 
 	//Query result information
 	CHECK_USER_ABORT();
-	if(!client->result(success, status_code, file_size, timestamp, content_type, content_encd))
+	if(!g_client->result(success, status_code, file_size, timestamp, content_type, content_encd))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
 		return EXIT_FAILURE;
+	}
+
+	//Skip download this time?
+	if(update_mode && (status_code == 304))
+	{
+		TRIGGER_SYSTEM_SOUND(alert, true);
+		std::wcerr << L"SKIPPED: Server currently does *not* provide a newer version of the file." << std::endl;
+		std::wcerr << L"         Version created at '" << Utils::timestamp_to_str(timestamp_existing) << L"' was retained.\n" << std::endl;
+		return EXIT_SUCCESS;
 	}
 
 	//Print some status information
@@ -367,7 +390,7 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(client, url_string, file_size, (set_timestamp ? timestamp : 0), outFileName, alert);
+	return transfer_file(url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
 }
 
 //=============================================================================
@@ -422,13 +445,12 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	Utils::set_console_title(std::wstring(L"INetGet - ").append(url_string));
 
 	//Create the HTTP(S) client
-	std::unique_ptr<AbstractClient> client;
-	if(!create_client(client, url.getScheme(), params))
+	if(!create_client(g_client, url.getScheme(), params))
 	{
 		std::wcerr << "Specified protocol is unsupported! Only HTTP(S) and FTP are allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Retrieve the URL
-	return retrieve_url(client.get(), url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getEnableAlert());
+	return retrieve_url(url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
 }

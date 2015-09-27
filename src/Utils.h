@@ -52,6 +52,9 @@ namespace Utils
 	uint64_t parse_timestamp(const std::wstring &str);
 	std::wstring timestamp_to_str(const uint64_t &timestamp);
 	time_t decode_date_str(const char *const date_str);
+
+	uint64_t get_file_time(const std::wstring &path);
+	bool set_file_time(const int &file_no, const uint64_t &timestamp);
 }
 
 

@@ -27,6 +27,7 @@
 //CRT
 #include <sstream>
 #include <iostream>
+#include <io.h>
 #include <iomanip>
 
 //Win32
@@ -488,12 +489,12 @@ void Utils::trigger_system_sound(const bool &success)
 
 static int month_str2int(const char *str)
 {
-	static const char *const g_months_lut[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
+	static const char *const MONTHS_LUT[] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
 	int ret = 0;
 	for(int j = 0; j < 12; j++)
 	{
-		if(!_strnicmp(str, g_months_lut[j], 3))
+		if(!_strnicmp(str, MONTHS_LUT[j], 3))
 		{
 			ret = j;
 			break;
@@ -527,6 +528,9 @@ time_t Utils::decode_date_str(const char *const date_str) //Mmm dd yyyy
 // PARSE TIME-STAMP
 //=============================================================================
 
+static const wchar_t *const WCS_MONTH[] = { L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec", NULL };
+static const wchar_t *const WCS_WKDAY[] = { L"Sun", L"Mon", L"Tue", L"Wed", L"Thu", L"Fri", L"Sat", NULL };
+
 static uint64_t filetime_to_uint64(const FILETIME &filetime)
 {
 	ULARGE_INTEGER temp;
@@ -545,11 +549,9 @@ static void uint64_to_filetime(const uint64_t &timestamp, FILETIME &filetime)
 
 static uint16_t parse_month_str(const std::wstring &str)
 {
-	static const wchar_t *const MONTH[] = { L"Jan", L"Feb", L"Mar", L"Apr", L"May", L"Jun", L"Jul", L"Aug", L"Sep", L"Oct", L"Nov", L"Dec", NULL };
-
-	for(size_t i = 0; MONTH[i]; i++)
+	for(size_t i = 0; WCS_MONTH[i]; i++)
 	{
-		if(!_wcsicmp(str.c_str(), MONTH[i]))
+		if(!_wcsicmp(str.c_str(), WCS_MONTH[i]))
 		{
 			return WORD(i + 1);
 		}
@@ -600,8 +602,7 @@ uint64_t Utils::parse_timestamp(const std::wstring &str)
 		return NULL; /*string is empty*/
 	}
 
-	SYSTEMTIME systime;
-	memset(&systime, 0, sizeof(SYSTEMTIME));
+	SYSTEMTIME systime = { 0, 0, 0, 0, 0, 0, 0, 0 };
 	
 	std::wstring token;
 	bool is_gmt = false;
@@ -628,9 +629,7 @@ uint64_t Utils::parse_timestamp(const std::wstring &str)
 
 	if(is_gmt)
 	{
-		FILETIME filetime;
-		memset(&filetime, 0, sizeof(FILETIME));
-
+		FILETIME filetime = { 0, 0 };
 		if(SystemTimeToFileTime(&systime, &filetime))
 		{
 			return filetime_to_uint64(filetime);
@@ -642,26 +641,53 @@ uint64_t Utils::parse_timestamp(const std::wstring &str)
 
 std::wstring Utils::timestamp_to_str(const uint64_t &timestamp)
 {
-	FILETIME filetime;
-	memset(&filetime, 0, sizeof(FILETIME));
-	
-	SYSTEMTIME systime;
-	memset(&systime, 0, sizeof(SYSTEMTIME));
+	FILETIME filetime = {0, 0 };
+	SYSTEMTIME systime = { 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	uint64_to_filetime(timestamp, filetime);
 	if(FileTimeToSystemTime(&filetime, &systime))
 	{
-		wchar_t szLocalDate[256], szLocalTime[256];
-		bool okay = true;
-		okay = okay && GetDateFormat(LOCALE_INVARIANT, DATE_SHORTDATE, &systime, NULL, szLocalDate, 256);
-		okay = okay && GetTimeFormat(LOCALE_INVARIANT, 0,              &systime, NULL, szLocalTime, 256);
-		if(okay)
-		{
-			std::wostringstream str;
-			str << szLocalDate << L", " << szLocalTime;
-			return str.str();
-		}
+		std::wostringstream str;
+		str << WCS_WKDAY[min(systime.wDayOfWeek, 6U)] << L", ";
+		str << std::setw(2) << std::setfill(L'0') << uint32_t(max(1, min(systime.wDay, 31U)))       << L' ';
+		str << WCS_MONTH[max(1, min(systime.wMonth, 12U)) - 1]                                      << L' ';
+		str << std::setw(4) << std::setfill(L'0') << uint32_t(max(1601, min(systime.wYear, 9999U))) << L' ';
+		str << std::setw(2) << std::setfill(L'0') << uint32_t(min(systime.wHour, 23U))              << L':';
+		str << std::setw(2) << std::setfill(L'0') << uint32_t(min(systime.wMinute, 59U))            << L':';
+		str << std::setw(2) << std::setfill(L'0') << uint32_t(min(systime.wSecond, 59U))            << L' ';
+		str << L"GMT";
+		return str.str();
 	}
 
 	return std::wstring();
+}
+
+//=============================================================================
+// GET/SET FILE TIME
+//=============================================================================
+
+bool Utils::set_file_time(const int &file_no, const uint64_t &timestamp)
+{
+	if(const HANDLE osHandle = (HANDLE) _get_osfhandle(file_no))
+	{
+		FILETIME filetime = { 0, 0 };
+		uint64_to_filetime(timestamp, filetime);
+		return (SetFileTime(osHandle, &filetime, NULL, &filetime) != FALSE);
+	}
+}
+
+uint64_t Utils::get_file_time(const std::wstring &path)
+{
+	uint64_t timestamp = NULL;
+	const HANDLE osHandle = CreateFile(path.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	if(osHandle != INVALID_HANDLE_VALUE)
+	{
+		FILETIME timeCreated = { 0, 0 }, timeLastAccess = { 0, 0 }, timeLastWrite = { 0, 0 };
+		if(GetFileTime(osHandle, &timeCreated, &timeLastAccess, &timeLastWrite))
+		{
+			timestamp = filetime_to_uint64(timeLastWrite);
+		}
+		CloseHandle(osHandle);
+	}
+	return timestamp;
 }

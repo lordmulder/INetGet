@@ -40,7 +40,7 @@ NullSink::NullSink(void)
 
 NullSink::~NullSink(void)
 {
-	close();
+	close(false);
 }
 
 //=============================================================================
@@ -53,7 +53,7 @@ bool NullSink::open(void)
 	return true;
 }
 
-bool NullSink::close(void)
+bool NullSink::close(const bool& /*success*/)
 {
 	m_isOpen  = false;
 	return true;

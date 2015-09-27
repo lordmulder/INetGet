@@ -117,7 +117,9 @@ Params::Params(void)
 	m_bEnableAlert(false),
 	m_bForceCrl(false),
 	m_bSetTimestamp(false),
+	m_bUpdateMode(false),
 	m_bVerboseMode(false),
+	m_bKeepFailed(false),
 	m_dTimeoutCon(std::numeric_limits<double>::quiet_NaN()),
 	m_dTimeoutRcv(std::numeric_limits<double>::quiet_NaN()),
 	m_uRetryCount(2U)
@@ -403,6 +405,16 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bSetTimestamp = true);
+	}
+	else if(IS_OPTION("update"))
+	{
+		ENSURE_NOVAL();
+		return (m_bUpdateMode = true);
+	}
+	else if(IS_OPTION("keep-failed"))
+	{
+		ENSURE_NOVAL();
+		return (m_bKeepFailed = true);
 	}
 	else if(IS_OPTION("verbose"))
 	{

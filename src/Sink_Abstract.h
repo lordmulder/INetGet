@@ -30,7 +30,7 @@ public:
 	virtual ~AbstractSink(void);
 
 	virtual bool open(void)  = 0;
-	virtual bool close(void) = 0;
+	virtual bool close(const bool &success) = 0;
 
 	virtual bool write(uint8_t *const buffer, const size_t &count) = 0;
 };

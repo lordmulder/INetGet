@@ -45,6 +45,7 @@ static const char    *CSTR(const std::string  &str) { return str.empty() ? NULL 
 static const wchar_t *const HTTP_VER_11      = L"HTTP/1.1";
 static const wchar_t *const ACCEPTED_TYPES[] = { L"*/*", NULL };
 static const wchar_t *const TYPE_FORM_DATA   = L"Content-Type: application/x-www-form-urlencoded";
+static const wchar_t *const MODIFIED_SINCE   = L"If-Modified-Since: ";
 
 //Macros
 #define OPTIONAL_FLAG(X,Y,Z) do \
@@ -81,7 +82,7 @@ HttpClient::~HttpClient(void)
 // CONNECTION HANDLING
 //=============================================================================
 
-bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer)
+bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
 {
 	if(!wininet_init())
 	{
@@ -117,7 +118,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	}
 
 	//Create HTTP request and send!
-	if(!create_request(use_tls, verb, url.getUrlPath(), url.getExtraInfo(), post_data, referrer))
+	if(!create_request(use_tls, verb, url.getUrlPath(), url.getExtraInfo(), post_data, referrer, timestamp))
 	{
 		return false; /*the request could not be created or sent*/
 	}
@@ -174,7 +175,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	return true;
 }
 
-bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer)
+bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
 {
 	//Setup request flags
 	DWORD flags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_KEEP_CONNECTION | INTERNET_FLAG_NO_CACHE_WRITE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_IGNORE_REDIRECT_TO_HTTPS;
@@ -203,7 +204,11 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	std::wostringstream headers;
 	if(post_data.length() > 0)
 	{
-		headers << TYPE_FORM_DATA;
+		headers << TYPE_FORM_DATA << std::endl;
+	}
+	if(timestamp > TIME_UNKNOWN)
+	{
+		headers << MODIFIED_SINCE << Utils::timestamp_to_str(timestamp) << std::endl;
 	}
 
 	//Setup retry point

@@ -40,7 +40,7 @@ StdOutSink::StdOutSink(void)
 
 StdOutSink::~StdOutSink(void)
 {
-	close();
+	close(false);
 }
 
 //=============================================================================
@@ -57,7 +57,7 @@ bool StdOutSink::open(void)
 	return false;
 }
 
-bool StdOutSink::close(void)
+bool StdOutSink::close(const bool& /*success*/)
 {
 	fflush(stdout);
 	m_isOpen  = false;

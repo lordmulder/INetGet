@@ -33,7 +33,7 @@ public:
 	virtual ~StdOutSink(void);
 
 	virtual bool open(void);
-	virtual bool close(void);
+	virtual bool close(const bool &success);
 
 	virtual bool write(uint8_t *const buffer, const size_t &count);
 

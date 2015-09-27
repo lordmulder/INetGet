@@ -31,7 +31,7 @@ public:
 	virtual ~FtpClient(void);
 
 	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer);
+	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp);
 	virtual bool close(void);
 
 	//Fetch result
