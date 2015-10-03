@@ -39,8 +39,12 @@
 #error Inconsistent DEBUG flags!
 #endif
 
-//Extern
-namespace Utils { namespace Internal { extern Sync::Event g_eventUserAbort; } }
+//Events
+static Sync::Event g_eventUserAbort;
+namespace Zero
+{
+	Sync::Signal g_sigUserAbort(g_eventUserAbort);
+}
 
 //=============================================================================
 // ERROR HANDLING
@@ -53,7 +57,7 @@ static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 	case CTRL_C_EVENT:
 	case CTRL_BREAK_EVENT:
 	case CTRL_CLOSE_EVENT:
-		Utils::Internal::g_eventUserAbort.set(true);
+		g_eventUserAbort.set(true);
 		return TRUE;
 	}
 	return FALSE;

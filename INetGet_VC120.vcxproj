@@ -42,6 +42,7 @@
     <ClInclude Include="src\Client_Abstract.h" />
     <ClInclude Include="src\Client_FTP.h" />
     <ClInclude Include="src\Client_HTTP.h" />
+    <ClInclude Include="src\Compat.h" />
     <ClInclude Include="src\Params.h" />
     <ClInclude Include="src\Sink_Abstract.h" />
     <ClInclude Include="src\Sink_File.h" />

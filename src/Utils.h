@@ -31,7 +31,6 @@
 
 namespace Utils
 {
-	extern Sync::Signal g_sigUserAbort;
 	static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 	std::wstring &trim(std::wstring &str);
@@ -61,37 +60,3 @@ namespace Utils
 	uint64_t get_file_time(const std::wstring &path);
 	bool set_file_time(const int &file_no, const uint64_t &timestamp);
 }
-
-#define TRIGGER_SYSTEM_SOUND(X,Y) do \
-{ \
-	if((X))  \
-	{ \
-		Utils::trigger_system_sound((Y)); \
-	} \
-} \
-while(0)
-
-#define CHECK_USER_ABORT() do \
-{ \
-	if(Utils::g_sigUserAbort.get()) \
-	{ \
-		std::wcerr << L"\n\nSIGINT: Operation aborted by the user !!!" << std::endl; \
-		exit(EXIT_FAILURE); \
-	} \
-} \
-while(0)
-
-#if _MSC_VER >= 1800
-#define ISNAN(X) std::isnan((X))
-#define ROUND(X) std::round((X))
-#else
-#define ISNAN(X) _isnan((X))
-double ROUND(const double &d);
-#endif
-
-#define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
-
-#define DBL_VALID_GTR(X,Y) ((!ISNAN((X))) && ((X) > (Y)))
-#define DBL_VALID_LSS(X,Y) ((!ISNAN((X))) && ((X) < (Y)))
-#define DBL_VALID_GEQ(X,Y) ((!ISNAN((X))) && ((X) >= (Y)))
-#define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))

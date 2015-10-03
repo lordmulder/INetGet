@@ -19,24 +19,17 @@
 // See https://www.gnu.org/licenses/gpl-2.0-standalone.html for details!
 ///////////////////////////////////////////////////////////////////////////////
 
-#pragma once
+#if _MSC_VER >= 1800
+#define ISNAN(X) std::isnan((X))
+#define ROUND(X) std::round((X))
+#else
+#define ISNAN(X) _isnan((X))
+double ROUND(const double &d);
+#endif
 
-#include "Client_Abstract.h"
+#define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
 
-class FtpClient : public AbstractClient
-{
-public:
-	//Constructor & destructor
-	FtpClient(const Sync::Signal &user_aborted, const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
-	virtual ~FtpClient(void);
-
-	//Connection handling
-	virtual bool open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp);
-	virtual bool close(void);
-
-	//Fetch result
-	virtual bool result(bool &success, uint32_t &status_code, uint64_t &file_size, uint64_t &time_stamp, std::wstring &content_type, std::wstring &content_encd);
-
-	//Read payload
-	virtual bool read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag);
-};
+#define DBL_VALID_GTR(X,Y) ((!ISNAN((X))) && ((X) > (Y)))
+#define DBL_VALID_LSS(X,Y) ((!ISNAN((X))) && ((X) < (Y)))
+#define DBL_VALID_GEQ(X,Y) ((!ISNAN((X))) && ((X) >= (Y)))
+#define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))

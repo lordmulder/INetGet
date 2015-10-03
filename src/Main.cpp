@@ -20,9 +20,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 //Internal
+#include "Compat.h"
+#include "Utils.h"
 #include "Version.h"
 #include "URL.h"
-#include "Utils.h"
 #include "Params.h"
 #include "Client_FTP.h"
 #include "Client_HTTP.h"
@@ -50,6 +51,35 @@
 //Globals
 static std::unique_ptr<AbstractClient> g_client;
 static std::unique_ptr<AbstractSink>   g_sink;
+
+//Externals
+namespace Zero
+{
+	extern Sync::Signal g_sigUserAbort;
+}
+
+//=============================================================================
+// HELPER MACROS
+//=============================================================================
+
+#define CHECK_USER_ABORT() do \
+{ \
+	if(Zero::g_sigUserAbort.get()) \
+	{ \
+		std::wcerr << L"\n\nSIGINT: Operation aborted by the user !!!" << std::endl; \
+		exit(EXIT_FAILURE); \
+	} \
+} \
+while(0)
+
+#define TRIGGER_SYSTEM_SOUND(X,Y) do \
+{ \
+	if((X))  \
+	{ \
+		Utils::trigger_system_sound((Y)); \
+	} \
+} \
+while(0)
 
 //=============================================================================
 // INTERNAL FUNCTIONS
@@ -139,23 +169,29 @@ static void print_help_screen(void)
 	std::wcout.flags(stateBackup);
 }
 
-static bool create_client(std::unique_ptr<AbstractClient> &client, const int16_t scheme_id, const Params &params)
+static bool create_client(std::unique_ptr<AbstractClient> &client, AbstractListener &listener, const int16_t scheme_id, const Params &params)
 {
 	switch(scheme_id)
 	{
 	case INTERNET_SCHEME_FTP:
-		client.reset(new FtpClient(params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()));
+		client.reset(new FtpClient(Zero::g_sigUserAbort, params.getDisableProxy(), params.getUserAgent(), params.getVerboseMode()));
 		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getForceCrl(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
+		client.reset(new HttpClient(Zero::g_sigUserAbort, params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getForceCrl(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
 		break;
 	default:
 		client.reset();
 		break;
 	}
 
-	return !!client;
+	if(client)
+	{
+		client->add_listener(listener);
+		return true;
+	}
+
+	return false;
 }
 
 static bool create_sink(std::unique_ptr<AbstractSink> &sink, const std::wstring fileName, const uint64_t &timestamp, const bool &keep_failed)
@@ -252,10 +288,53 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 }
 
 //=============================================================================
+// STATUS LISTENER
+//=============================================================================
+
+class StatusListener : public AbstractListener
+{
+public:
+	StatusListener()
+	{
+		m_modeFlag = false;
+	}
+
+	void setMode(const bool &mode)
+	{
+		m_modeFlag = mode;
+	}
+
+protected:
+	virtual void onMessage(const std::wstring message, const bool &critical)
+	{
+		Sync::Locker locker(m_mutex);
+		if(!Zero::g_sigUserAbort.get())
+		{
+			if(critical)
+			{
+				if(m_modeFlag)
+				{
+					std::wcerr << L"\b\b\bdone" << std::endl;
+				}
+				std::wcerr << L'\n' << message << L'\n' << std::endl;
+			}
+			else
+			{
+				std::wcerr << L"--> " << message << std::endl;
+			}
+		}
+	}
+
+private:
+	Sync::Mutex m_mutex;
+	bool m_modeFlag;
+};
+
+//=============================================================================
 // PROCESS
 //=============================================================================
 
-static int transfer_file(const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
+static int transfer_file(const std::wstring &url_string, StatusListener &listener, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
 {
 	//Open output file
 	if(!create_sink(g_sink, outFileName, timestamp, keep_failed))
@@ -280,8 +359,9 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
 	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
+	listener.setMode(true);
 
-	//Download file
+	//Download the file now!
 	while(!eof_flag)
 	{
 		size_t bytes_read = 0;
@@ -322,18 +402,24 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 		print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index);
 	}
 
+	//Finalize progress
 	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
 
+	//Flush and close the sink
 	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
 	g_sink->close(true);
 
+	//Report total time and average download rate
 	TRIGGER_SYSTEM_SOUND(alert, true);
 	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? Utils::second_to_string(total_time) : L"no time") << " (avg. rate: " << Utils::nbytes_to_string(average_rate) << "/s).\n" << std::endl;
+
+	//Done
+	listener.setMode(false);
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
+static int retrieve_url(const std::wstring &url_string, StatusListener &listener, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
@@ -346,12 +432,16 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 	}
 
 	//Create the HTTPS connection/request
+	std::wcerr << L"Connecting to " << url.getHostName() << L':' << url.getPortNo() << L", please wait..." << std::endl;
 	if(!g_client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
-		std::wcerr << "ERROR: The request could not be sent!\n" << std::endl;
+		std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	//Add extra space
+	std::wcerr << std::endl;
 
 	//Initialize local variables
 	bool success;
@@ -390,7 +480,7 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
+	return transfer_file(url_string, listener, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
 }
 
 //=============================================================================
@@ -445,12 +535,13 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	Utils::set_console_title(std::wstring(L"INetGet - ").append(url_string));
 
 	//Create the HTTP(S) client
-	if(!create_client(g_client, url.getScheme(), params))
+	StatusListener listener;
+	if(!create_client(g_client, listener, url.getScheme(), params))
 	{
 		std::wcerr << "Specified protocol is unsupported! Only HTTP(S) and FTP are allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Retrieve the URL
-	return retrieve_url(url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
+	return retrieve_url(url_string, listener, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
 }

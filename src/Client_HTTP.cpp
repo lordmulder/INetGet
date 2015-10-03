@@ -32,7 +32,6 @@
 
 //CRT
 #include <stdint.h>
-#include <iostream>
 #include <stdexcept>
 #include <sstream>
 #include <cmath>
@@ -58,15 +57,15 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-HttpClient::HttpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const bool &force_crl, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
+HttpClient::HttpClient(const Sync::Signal &user_aborted, const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const bool &force_crl, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
+	AbstractClient(user_aborted, disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose),
 	m_disable_redir(no_redir),
 	m_insecure_tls(insecure),
 	m_force_crl(force_crl),
 	m_hConnection(NULL),
 	m_hRequest(NULL),
-	m_current_status(UINT32_MAX),
-	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
+	m_current_status(UINT32_MAX)
 {
 	if(m_insecure_tls && m_force_crl)
 	{
@@ -92,7 +91,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	//Close the existing connection, just to be sure
 	if(!close())
 	{
-		std::wcerr << L"ERROR: Failed to close the existing connection!\n" << std::endl;
+		emit_message(std::wstring(L"ERROR: Failed to close the existing connection!"), true);
 		return false;
 	}
 
@@ -100,13 +99,15 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	const bool use_tls = (url.getScheme() == INTERNET_SCHEME_HTTPS);
 	if(m_verbose)
 	{
-		std::wcerr << L"RQST_URL: \"" << (use_tls ? L"HTTPS" : L"HTTP") <<  L'|' << url.getHostName() << L'|' << url.getUserName() << L'|' << url.getPassword() << L'|' << url.getPortNo() << L'|' << url.getUrlPath() << url.getExtraInfo() << L'"' << std::endl;
-		std::wcerr << L"REFERRER: \"" << referrer << L'"' << std::endl;
-		std::wcerr << L"POST_DAT: \"" << post_data.c_str() << L"\"\n" << std::endl;
+		std::wostringstream url_str;
+		url_str << (use_tls ? L"HTTPS" : L"HTTP") <<  L'|' << url.getHostName() << L'|' << url.getUserName() << L'|' << url.getPassword() << L'|' << url.getPortNo() << L'|' << url.getUrlPath() << url.getExtraInfo();
+		emit_message(std::wstring(L"RQST_URL: \"") + url_str.str() + L'"');
+		emit_message(std::wstring(L"REFERRER: \"") + referrer + L'"');
+		emit_message(std::wstring(L"POST_DAT: \"") + Utils::utf8_to_wide_str(post_data.c_str()) + L'"');
 	}
 
 	//Print info
-	std::wcerr << L"Creating " << (use_tls ? L"HTTPS" : L"HTTP") << " connection to " << url.getHostName() << L':' << url.getPortNo() << ", please wait:" << std::endl;
+	//std::wcerr << L"Creating " << (use_tls ? L"HTTPS" : L"HTTP") << " connection to " << url.getHostName() << L':' << url.getPortNo() << ", please wait:" << std::endl;
 
 	//Reset status
 	m_current_status = UINT32_MAX;
@@ -124,7 +125,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 	}
 
 	//Sucess
-	std::wcerr << L"--> Response received.\n" << std::endl;
+	emit_message(std::wstring(L"Response received."));
 	return true;
 }
 
@@ -144,7 +145,6 @@ bool HttpClient::close(void)
 		success = false;
 	}
 
-	CHECK_USER_ABORT();
 	return success;
 }
 
@@ -159,7 +159,7 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(m_hConnection == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "--> Failed!\n\nInternetConnect() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"InternetConnect() function has failed:\n").append(Utils::win_error_string(error_code)), true);
 		return false;
 	}
 
@@ -167,12 +167,11 @@ bool HttpClient::connect(const std::wstring &hostName, const uint16_t &portNo, c
 	if(InternetSetStatusCallback(m_hConnection, (INTERNET_STATUS_CALLBACK)(&status_callback)) == INTERNET_INVALID_STATUS_CALLBACK)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << L"--> Failed!\n\nInternetSetStatusCallback() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"InternetSetStatusCallback() function has failed:\n").append(Utils::win_error_string(error_code)), true);
 		return false;
 	}
 
-	CHECK_USER_ABORT();
-	return true;
+	return (!m_user_aborted.get());
 }
 
 bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, const std::wstring &path, const std::wstring &query, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
@@ -189,7 +188,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << L"--> Failed!\n\nHttpOpenRequest() function has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"HttpOpenRequest() function has failed:\n").append(Utils::win_error_string(error_code)), true);
 		return false;
 	}
 
@@ -221,26 +220,30 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(success != TRUE)
 	{
 		const DWORD error_code = GetLastError();
-		CHECK_USER_ABORT();
+		if(m_user_aborted.get())
+		{
+			return false; /*aborted by user*/
+		}
 		if((error_code == ERROR_INTERNET_SEC_CERT_REV_FAILED) && (!retry_flag))
 		{
 			if(retry_flag = update_security_opts(m_hRequest, SECURITY_FLAG_IGNORE_REVOCATION, true))
 			{
-				std::wcerr << L"--> Failed to check for revocation, retrying with revocation checks disabled!" << std::endl;
+				emit_message(std::wstring(L"Failed to check for revocation, retrying with revocation checks disabled!"));
 				goto label_retry_create_request;
 			}
 		}
 		else if(((error_code == ERROR_INTERNET_CANNOT_CONNECT) || (error_code == ERROR_INTERNET_TIMEOUT)) && (retry_counter++ < m_connect_retry))
 		{
-			std::wcerr << L"--> Connection has failed. Retrying! [" << retry_counter << L'/' << m_connect_retry << ']' << std::endl;
+			std::wostringstream retry_info;
+			retry_info << L'[' << retry_counter << L'/' << m_connect_retry << L']';
+			emit_message(std::wstring(L"Connection has failed. Retrying! ").append(retry_info.str()));
 			goto label_retry_create_request;
 		}
-		std::wcerr << L"--> Failed!\n\nFailed to connect to the server:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"Failed to connect to the server:\n").append(Utils::win_error_string(error_code)), true);
 		return false;
 	}
 	
-	CHECK_USER_ABORT();
-	return true;
+	return (!m_user_aborted.get());
 }
 
 //=============================================================================
@@ -258,7 +261,7 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_siz
 
 	if(m_hRequest == NULL)
 	{
-		std::wcerr << "INTERNAL ERROR: There currently is no active request!\n" << std::endl;
+		emit_message(std::wstring(L"INTERNAL ERROR: There currently is no active request!"), true);
 		return false; /*request not created yet*/
 	}
 
@@ -294,7 +297,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t 
 {
 	if(m_hRequest == NULL)
 	{
-		std::wcerr << "\n\nINTERNAL ERROR: There currently is no active request!\n" << std::endl;
+		emit_message(std::wstring(L"INTERNAL ERROR: There currently is no active request!"), true);
 		return false; /*request not created yet*/
 	}
 
@@ -302,7 +305,7 @@ bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t 
 	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
 	{
 		const DWORD error_code = GetLastError();
-		std::wcerr << "\b\b\bfailed!\n\nAn error occurred while receiving data from the server:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"An error occurred while receiving data from the server:\n").append(Utils::win_error_string(error_code)), true);
 		return false;
 	}
 
@@ -316,21 +319,27 @@ bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t 
 
 void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
 {
-	CHECK_USER_ABORT();
+	if(m_user_aborted.get())
+	{
+		return; /*aborted by user*/
+	}
+
 	AbstractClient::update_status(status, info);
 	if(m_current_status != status)
 	{
+		std::wostringstream status_info;
 		switch(status)
 		{
-			case INTERNET_STATUS_DETECTING_PROXY:      std::wcerr << "--> Detetcing proxy server..."                        << std::endl; break;
-			case INTERNET_STATUS_RESOLVING_NAME:       std::wcerr << "--> Resolving host name..."                           << std::endl; break;
-			case INTERNET_STATUS_NAME_RESOLVED:        std::wcerr << "--> Server address resolved to: " << status_str(info) << std::endl; break;
-			case INTERNET_STATUS_CONNECTING_TO_SERVER: std::wcerr << "--> Connecting to server..."                          << std::endl; break;
-			case INTERNET_STATUS_SENDING_REQUEST:      std::wcerr << "--> Sending request to server..."                     << std::endl; break;
-			case INTERNET_STATUS_REDIRECT:             std::wcerr << "--> Redirecting: " << status_str(info)                << std::endl; break;
-			case INTERNET_STATUS_RECEIVING_RESPONSE:   std::wcerr << "--> Request sent, awaiting response..."               << std::endl; break;
+			case INTERNET_STATUS_DETECTING_PROXY:      status_info << "Detetcing proxy server..."                       ; break;
+			case INTERNET_STATUS_RESOLVING_NAME:       status_info << "Resolving host name..."                          ; break;
+			case INTERNET_STATUS_NAME_RESOLVED:        status_info << "Server address resolved to: " << status_str(info); break;
+			case INTERNET_STATUS_CONNECTING_TO_SERVER: status_info << "Connecting to server..."                         ; break;
+			case INTERNET_STATUS_SENDING_REQUEST:      status_info << "Sending request to server..."                    ; break;
+			case INTERNET_STATUS_REDIRECT:             status_info << "Redirecting: " << status_str(info)               ; break;
+			case INTERNET_STATUS_RECEIVING_RESPONSE:   status_info << "Request sent, awaiting response..."              ; break;
 			default: return; /*unknown code*/
 		}
+		emit_message(status_info.str());
 		m_current_status = status;
 	}
 }
@@ -385,7 +394,7 @@ bool HttpClient::get_header_int(void *const request, const uint32_t type, uint32
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"HttpQueryInfo() has failed:\n").append(Utils::win_error_string(error_code)), true);
 	}
 
 	return false;
@@ -407,7 +416,7 @@ bool HttpClient::get_header_str(void *const request, const uint32_t type, std::w
 	const DWORD error_code = GetLastError();
 	if(error_code != ERROR_HTTP_HEADER_NOT_FOUND)
 	{
-		std::wcerr << "HttpQueryInfo() has failed:\n" << Utils::win_error_string(error_code) << L'\n' << std::endl;
+		emit_message(std::wstring(L"HttpQueryInfo() has failed:\n").append(Utils::win_error_string(error_code)), true);
 	}
 
 	value.clear();

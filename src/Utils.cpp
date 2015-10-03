@@ -33,13 +33,6 @@
 #include <MMSystem.h>
 #include <WinInet.h>
 
-//Events
-namespace Utils
-{
-	namespace Internal { Sync::Event g_eventUserAbort; }
-	Sync::Signal g_sigUserAbort(Internal::g_eventUserAbort);
-}
-
 //=============================================================================
 // ROUND
 //=============================================================================

@@ -137,6 +137,9 @@
     <ClInclude Include="src\Sync.h">
       <Filter>Header Files\Utilties</Filter>
     </ClInclude>
+    <ClInclude Include="src\Compat.h">
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="res\compat.manifest">

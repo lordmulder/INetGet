@@ -27,7 +27,7 @@ class HttpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	HttpClient(const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const bool &force_crl = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
+	HttpClient(const Sync::Signal &user_aborted, const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const bool &force_crl = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~HttpClient(void);
 
 	//Connection handling
@@ -49,11 +49,11 @@ private:
 	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
 	//Utilities
-	static const wchar_t *http_verb_str(const http_verb_t &verb);
-	static bool update_security_opts(void *const request, const uint32_t &new_flags, const bool &enable);
-	static bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
-	static bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
-	static uint64_t parse_file_size(const std::wstring &str);
+	const wchar_t *http_verb_str(const http_verb_t &verb);
+	bool update_security_opts(void *const request, const uint32_t &new_flags, const bool &enable);
+	bool get_header_int(void *const request, const uint32_t type, uint32_t &value);
+	bool get_header_str(void *const request, const uint32_t type, std::wstring &value);
+	uint64_t parse_file_size(const std::wstring &str);
 
 	//Handles
 	void *m_hConnection;

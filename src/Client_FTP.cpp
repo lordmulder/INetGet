@@ -32,7 +32,6 @@
 
 //CRT
 #include <stdint.h>
-#include <iostream>
 #include <stdexcept>
 #include <sstream>
 
@@ -56,9 +55,9 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-FtpClient::FtpClient(const bool &disableProxy, const std::wstring &userAgentStr, const bool& /*no_redir*/, const bool& /*insecure*/, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
+FtpClient::FtpClient(const Sync::Signal &user_aborted, const bool &disableProxy, const std::wstring &userAgentStr, const bool& /*no_redir*/, const bool& /*insecure*/, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
-	AbstractClient(disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
+	AbstractClient(user_aborted, disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose)
 {
 }
 
@@ -80,7 +79,7 @@ bool FtpClient::open(const http_verb_t& /*verb*/, const URL& /*url*/, const std:
 	//Close the existing connection, just to be sure
 	if(!close())
 	{
-		std::wcerr << L"ERROR: Failed to close the existing connection!\n" << std::endl;
+		emit_message(std::wstring(L"ERROR: Failed to close the existing connection!"), true);
 		return false;
 	}
 
@@ -103,7 +102,6 @@ bool FtpClient::close(void)
 		success = false;
 	}*/
 
-	CHECK_USER_ABORT();
 	return success;
 }
 
