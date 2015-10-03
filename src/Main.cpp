@@ -32,6 +32,7 @@
 #include "Sink_Null.h"
 #include "Timer.h"
 #include "Average.h"
+#include "Thread.h"
 
 //Win32
 #define NOMINMAX 1
@@ -304,6 +305,25 @@ protected:
 	}
 private:
 	Sync::Mutex m_mutex;
+};
+
+//=============================================================================
+// THREAD TEST
+//=============================================================================
+
+class MyThread : public Thread
+{
+protected:
+	virtual uint32_t main(void)
+	{
+		while(!is_stopped())
+		{
+			std::wcerr << L"TEST" << std::endl;
+			Sleep(500);
+		}
+
+		return 0;
+	}
 };
 
 //=============================================================================

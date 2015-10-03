@@ -87,6 +87,9 @@
     <ClCompile Include="src\Sync.cpp">
       <Filter>Source Files\Utilities</Filter>
     </ClCompile>
+    <ClCompile Include="src\Thread.cpp">
+      <Filter>Source Files\Utilities</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Params.h">
@@ -138,6 +141,9 @@
       <Filter>Header Files\Utilties</Filter>
     </ClInclude>
     <ClInclude Include="src\Compat.h">
+      <Filter>Header Files\Utilties</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Thread.h">
       <Filter>Header Files\Utilties</Filter>
     </ClInclude>
   </ItemGroup>

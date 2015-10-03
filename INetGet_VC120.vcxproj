@@ -31,6 +31,7 @@
     <ClCompile Include="src\Sink_StdOut.cpp" />
     <ClCompile Include="src\Slunk.cpp" />
     <ClCompile Include="src\Sync.cpp" />
+    <ClCompile Include="src\Thread.cpp" />
     <ClCompile Include="src\Timer.cpp" />
     <ClCompile Include="src\Types.cpp" />
     <ClCompile Include="src\URL.cpp" />
@@ -50,6 +51,7 @@
     <ClInclude Include="src\Sink_StdOut.h" />
     <ClInclude Include="src\Slunk.h" />
     <ClInclude Include="src\Sync.h" />
+    <ClInclude Include="src\Thread.h" />
     <ClInclude Include="src\Timer.h" />
     <ClInclude Include="src\Types.h" />
     <ClInclude Include="src\URL.h" />
