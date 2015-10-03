@@ -21,9 +21,6 @@
 
 #include "Utils.h"
 
-//Intenral
-#include "Types.h"
-
 //CRT
 #include <sstream>
 #include <iostream>
@@ -36,8 +33,12 @@
 #include <MMSystem.h>
 #include <WinInet.h>
 
-//Extern
-extern uintptr_t g_userAbortEvent;
+//Events
+namespace Utils
+{
+	namespace Internal { Sync::Event g_eventUserAbort; }
+	Sync::Signal g_sigUserAbort(Internal::g_eventUserAbort);
+}
 
 //=============================================================================
 // ROUND
@@ -53,23 +54,6 @@ double ROUND(const double &d)
 }
 
 #endif //_MSC_VER
-
-//=============================================================================
-// CHECK USER ABORT
-//=============================================================================
-
-bool Utils::check_user_abort_flag(void)
-{
-	if(g_userAbortEvent)
-	{
-		if(WaitForSingleObject((HANDLE)g_userAbortEvent, 0) == WAIT_OBJECT_0)
-		{
-			std::wcerr << L"\n\nSIGINT: Operation was aborted by user !!!\n" << std::endl;
-			return true;
-		}
-	}
-	return false;
-}
 
 //=============================================================================
 // TRIM STRING
@@ -674,6 +658,7 @@ bool Utils::set_file_time(const int &file_no, const uint64_t &timestamp)
 		uint64_to_filetime(timestamp, filetime);
 		return (SetFileTime(osHandle, &filetime, NULL, &filetime) != FALSE);
 	}
+	return false;
 }
 
 uint64_t Utils::get_file_time(const std::wstring &path)

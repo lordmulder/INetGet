@@ -21,11 +21,17 @@
 
 #pragma once
 
+//CRT
 #include <string>
 #include <stdint.h>
 
+//Internal
+#include "Types.h"
+#include "Sync.h"
+
 namespace Utils
 {
+	extern Sync::Signal g_sigUserAbort;
 	static const uint64_t TICKS_PER_SECCOND = 10000000ui64;
 
 	std::wstring &trim(std::wstring &str);
@@ -47,7 +53,6 @@ namespace Utils
 	std::wstring utf8_to_wide_str(const std::string &str);
 
 	void trigger_system_sound(const bool &success);
-	bool check_user_abort_flag(void);
 
 	uint64_t parse_timestamp(const std::wstring &str);
 	std::wstring timestamp_to_str(const uint64_t &timestamp);
@@ -56,7 +61,6 @@ namespace Utils
 	uint64_t get_file_time(const std::wstring &path);
 	bool set_file_time(const int &file_no, const uint64_t &timestamp);
 }
-
 
 #define TRIGGER_SYSTEM_SOUND(X,Y) do \
 { \
@@ -69,8 +73,9 @@ while(0)
 
 #define CHECK_USER_ABORT() do \
 { \
-	if(Utils::check_user_abort_flag()) \
+	if(Utils::g_sigUserAbort.get()) \
 	{ \
+		std::wcerr << L"\n\nSIGINT: Operation aborted by the user !!!" << std::endl; \
 		exit(EXIT_FAILURE); \
 	} \
 } \
@@ -84,9 +89,9 @@ while(0)
 double ROUND(const double &d);
 #endif
 
+#define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
+
 #define DBL_VALID_GTR(X,Y) ((!ISNAN((X))) && ((X) > (Y)))
 #define DBL_VALID_LSS(X,Y) ((!ISNAN((X))) && ((X) < (Y)))
 #define DBL_VALID_GEQ(X,Y) ((!ISNAN((X))) && ((X) >= (Y)))
 #define DBL_VALID_LEQ(X,Y) ((!ISNAN((X))) && ((X) <= (Y)))
-
-#define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)

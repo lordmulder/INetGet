@@ -28,7 +28,7 @@
 #define VER_INETGET_MAJOR 1
 #define VER_INETGET_MIN_H 0
 #define VER_INETGET_MIN_L 1
-#define VER_INETGET_PATCH 1
+#define VER_INETGET_PATCH 2
 
 //=============================================================================
 // Helper macros (aka: having fun with the C pre-processor)

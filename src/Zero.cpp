@@ -31,13 +31,16 @@
 #include <io.h>
 #include <fcntl.h>
 
+//Internal
+#include "Sync.h"
+
 //Validation
 #if (defined(NDEBUG) && defined(_DEBUG)) || ((!defined(NDEBUG)) && (!defined(_DEBUG)))
 #error Inconsistent DEBUG flags!
 #endif
 
-//Abort flags
-uintptr_t g_userAbortEvent = NULL;
+//Extern
+namespace Utils { namespace Internal { extern Sync::Event g_eventUserAbort; } }
 
 //=============================================================================
 // ERROR HANDLING
@@ -50,11 +53,8 @@ static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 	case CTRL_C_EVENT:
 	case CTRL_BREAK_EVENT:
 	case CTRL_CLOSE_EVENT:
-		if(g_userAbortEvent != NULL)
-		{
-			SetEvent((HANDLE)g_userAbortEvent);
-			return TRUE;
-		}
+		Utils::Internal::g_eventUserAbort.set(true);
+		return TRUE;
 	}
 	return FALSE;
 }
@@ -97,13 +97,11 @@ int inetget_main(const int argc, const wchar_t *const argv[]);
 
 static int inetget_startup(const int argc, const wchar_t *const argv[])
 {
-	timeBeginPeriod(1);
-
 	_setmode(_fileno(stdout), _O_BINARY);
 	_setmode(_fileno(stderr), _O_U8TEXT);
 	_setmode(_fileno(stdin ), _O_BINARY);
 
-	g_userAbortEvent = (uintptr_t) CreateEvent(NULL, TRUE, FALSE, NULL);
+	timeBeginPeriod(1);
 	SetConsoleCtrlHandler(my_sigint_handler, TRUE);
 
 	return inetget_main(argc, argv);
