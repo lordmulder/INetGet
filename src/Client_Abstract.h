@@ -34,7 +34,7 @@ class AbstractListener
 {
 	friend class AbstractClient;
 protected:
-	virtual void onMessage(const std::wstring message, const bool &critical) = 0;
+	virtual void onMessage(const std::wstring message) = 0;
 };
 
 class AbstractClient
@@ -46,7 +46,7 @@ public:
 	AbstractClient(const Sync::Signal &user_aborted, const bool &disable_proxy = false, const std::wstring &agent_str = std::wstring(), const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~AbstractClient(void);
 
-	//Callback
+	//Add listener
 	void add_listener(AbstractListener &callback);
 
 	//Connection handling
@@ -59,6 +59,9 @@ public:
 	//Read payload
 	virtual bool read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag) = 0;
 
+	//Error message
+	std::wstring get_error_text() const;
+
 protected:
 	//WinINet initialization
 	bool wininet_init(void);
@@ -68,8 +71,9 @@ protected:
 	static void __stdcall status_callback(void *hInternet, uintptr_t dwContext, uint32_t dwInternetStatus, void *lpvStatusInformation, uint32_t dwStatusInformationLength);
 	virtual void update_status(const uint32_t &status, const uintptr_t &information);
 
-	//Feed listeners
-	void emit_message(const std::wstring message, const bool &critical = false);
+	//Status messages
+	void set_error_text(const std::wstring &text = std::wstring());
+	void emit_message(const std::wstring message);
 
 	//Utilities
 	bool close_handle(void *&handle);
@@ -86,10 +90,15 @@ protected:
 	const double m_timeout_rcv;
 	const uint32_t m_connect_retry;
 
-	//Callbacks
-	Sync::Mutex m_mutexListeners;
-	std::set<AbstractListener*> m_listeners;
-
 	//Handle
 	void *m_hInternet;
+
+private:
+	//Listener support
+	mutable Sync::Mutex m_mutex_listeners;
+	std::set<AbstractListener*> m_listeners;
+
+	//Error message
+	mutable Sync::Mutex m_mutex_error_txt;
+	std::wstring m_error_text;
 };

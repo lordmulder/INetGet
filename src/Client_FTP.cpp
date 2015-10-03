@@ -79,7 +79,7 @@ bool FtpClient::open(const http_verb_t& /*verb*/, const URL& /*url*/, const std:
 	//Close the existing connection, just to be sure
 	if(!close())
 	{
-		emit_message(std::wstring(L"ERROR: Failed to close the existing connection!"), true);
+		set_error_text(std::wstring(L"ERROR: Failed to close the existing connection!"));
 		return false;
 	}
 

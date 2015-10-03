@@ -111,9 +111,9 @@ static std::wstring build_version_string(void)
 static void print_logo(void)
 {
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr << L"\nINetGet v" << build_version_string() << " - Lightweight command-line front-end to WinINet\n"
+	std::wcerr << L"\nINetGet v" << build_version_string() << L" - Lightweight command-line front-end to WinINet\n"
 		<< L"Copyright (c) " << &BUILD_DATE[7] << L" LoRd_MuldeR <mulder2@gmx.de>. Some rights reserved.\n"
-		<< L"Built on " << BUILD_DATE << " at " << BUILD_TIME << ", " << BUILD_COMP << ", Win-" << BUILD_ARCH << ", " << BUILD_CONF << '\n' << std::endl;
+		<< L"Built on " << BUILD_DATE << L" at " << BUILD_TIME << L", " << BUILD_COMP << L", Win-" << BUILD_ARCH << L", " << BUILD_CONF << L'\n' << std::endl;
 	std::wcout.flags(stateBackup);
 
 	const time_t build_time = Utils::decode_date_str(BUILD_DATE);
@@ -231,7 +231,7 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 	if(force || (timer_update.query() > 0.2))
 	{
 		const std::ios::fmtflags stateBackup(std::wcout.flags());
-		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << "\r[" << SPINNER[(index++) & 3] << "] ";
+		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << L"\r[" << SPINNER[(index++) & 3] << L"] ";
 
 		if(file_size != AbstractClient::SIZE_UNKNOWN)
 		{
@@ -281,7 +281,7 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 			Utils::set_console_title(title.str());
 		}
 
-		std::wcerr << "    " << std::flush;
+		std::wcerr << L"    " << std::flush;
 		std::wcout.flags(stateBackup);
 		timer_update.reset();
 	}
@@ -293,54 +293,30 @@ static inline void print_progress(const std::wstring url_string, uint64_t &total
 
 class StatusListener : public AbstractListener
 {
-public:
-	StatusListener()
-	{
-		m_modeFlag = false;
-	}
-
-	void setMode(const bool &mode)
-	{
-		m_modeFlag = mode;
-	}
-
 protected:
-	virtual void onMessage(const std::wstring message, const bool &critical)
+	virtual void onMessage(const std::wstring message)
 	{
 		Sync::Locker locker(m_mutex);
 		if(!Zero::g_sigUserAbort.get())
 		{
-			if(critical)
-			{
-				if(m_modeFlag)
-				{
-					std::wcerr << L"\b\b\bdone" << std::endl;
-				}
-				std::wcerr << L'\n' << message << L'\n' << std::endl;
-			}
-			else
-			{
-				std::wcerr << L"--> " << message << std::endl;
-			}
+			std::wcerr << L"--> " << message << std::endl;
 		}
 	}
-
 private:
 	Sync::Mutex m_mutex;
-	bool m_modeFlag;
 };
 
 //=============================================================================
 // PROCESS
 //=============================================================================
 
-static int transfer_file(const std::wstring &url_string, StatusListener &listener, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
+static int transfer_file(const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
 {
 	//Open output file
 	if(!create_sink(g_sink, outFileName, timestamp, keep_failed))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
-		std::wcerr << "ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
+		std::wcerr << L"ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
@@ -359,7 +335,6 @@ static int transfer_file(const std::wstring &url_string, StatusListener &listene
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
 	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
-	listener.setMode(true);
 
 	//Download the file now!
 	while(!eof_flag)
@@ -369,7 +344,8 @@ static int transfer_file(const std::wstring &url_string, StatusListener &listene
 		CHECK_USER_ABORT();
 		if(!g_client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
 		{
-			std::wcerr << "ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
+			std::wcerr << L"\b\b\bfailed\n\n" << g_client->get_error_text() << L'\n' << std::endl;
+			std::wcerr << L"ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
 			g_sink->close(false);
 			TRIGGER_SYSTEM_SOUND(alert, false);
 			return EXIT_FAILURE;
@@ -391,7 +367,8 @@ static int transfer_file(const std::wstring &url_string, StatusListener &listene
 
 			if(!g_sink->write(buffer.get(), bytes_read))
 			{
-				std::wcerr << "ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
+				std::wcerr << L"\b\b\bfailed\n\n" << std::endl;
+				std::wcerr << L"ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
 				g_sink->close(false);
 				TRIGGER_SYSTEM_SOUND(alert, false);
 				return EXIT_FAILURE;
@@ -407,19 +384,18 @@ static int transfer_file(const std::wstring &url_string, StatusListener &listene
 	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
 
 	//Flush and close the sink
-	std::wcerr << "\b\b\bdone\n\nFlushing output buffers... " << std::flush;
+	std::wcerr << L"\b\b\bdone\n\nFlushing output buffers... " << std::flush;
 	g_sink->close(true);
 
 	//Report total time and average download rate
 	TRIGGER_SYSTEM_SOUND(alert, true);
-	std::wcerr << "done\n\nDownload completed in " << ((total_time >= 1.0) ? Utils::second_to_string(total_time) : L"no time") << " (avg. rate: " << Utils::nbytes_to_string(average_rate) << "/s).\n" << std::endl;
+	std::wcerr << L"done\n\nDownload completed in " << ((total_time >= 1.0) ? Utils::second_to_string(total_time) : L"no time") << L" (avg. rate: " << Utils::nbytes_to_string(average_rate) << L"/s).\n" << std::endl;
 
 	//Done
-	listener.setMode(false);
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(const std::wstring &url_string, StatusListener &listener, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
+static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
@@ -436,6 +412,7 @@ static int retrieve_url(const std::wstring &url_string, StatusListener &listener
 	if(!g_client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
+		std::wcerr << L'\n' << g_client->get_error_text() << L'\n' << std::endl;
 		std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -454,6 +431,7 @@ static int retrieve_url(const std::wstring &url_string, StatusListener &listener
 	if(!g_client->result(success, status_code, file_size, timestamp, content_type, content_encd))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
+		std::wcerr << g_client->get_error_text() << L'\n' << std::endl;
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -480,7 +458,7 @@ static int retrieve_url(const std::wstring &url_string, StatusListener &listener
 	}
 
 	CHECK_USER_ABORT();
-	return transfer_file(url_string, listener, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
+	return transfer_file(url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
 }
 
 //=============================================================================
@@ -543,5 +521,5 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	}
 
 	//Retrieve the URL
-	return retrieve_url(url_string, listener, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
+	return retrieve_url(url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
 }

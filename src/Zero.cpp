@@ -67,13 +67,13 @@ static BOOL WINAPI my_sigint_handler(DWORD dwCtrlType)
 
 static void my_invalid_param_handler(const wchar_t*, const wchar_t*, const wchar_t*, unsigned int, uintptr_t)
 {
-	std::wcerr << "\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
+	std::wcerr << L"\n\nGURU MEDITATION: Invalid parameter handler invoked, application will exit!\n" << std::endl;
 	_exit(EXIT_FAILURE);
 }
 
 static LONG WINAPI my_exception_handler(struct _EXCEPTION_POINTERS* /*ExceptionInfo*/)
 {
-	std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
+	std::wcerr << L"\n\nGURU MEDITATION: Unhandeled exception handler invoked, application will exit!\n" << std::endl;
 	_exit(EXIT_FAILURE);
 	return EXCEPTION_EXECUTE_HANDLER;
 }
@@ -125,12 +125,12 @@ static int wmain_ex(const int argc, const wchar_t *const argv[])
 	}
 	catch(std::exception &err)
 	{
-		std::wcerr << "\n\nUNHANDELED EXCEPTION: " << err.what() << '\n' << std::endl;
+		std::wcerr << L"\n\nUNHANDELED EXCEPTION: " << err.what() << '\n' << std::endl;
 		_exit(EXIT_FAILURE);
 	}
 	catch(...)
 	{
-		std::wcerr << "\n\nUNHANDELED EXCEPTION: Unknown C++ exception error!\n" << std::endl;
+		std::wcerr << L"\n\nUNHANDELED EXCEPTION: Unknown C++ exception error!\n" << std::endl;
 		_exit(EXIT_FAILURE);
 	}
 	return ret;
@@ -148,7 +148,7 @@ int wmain(int argc, wchar_t* argv[])
 	}
 	__except(EXCEPTION_EXECUTE_HANDLER)
 	{
-		std::wcerr << "\n\nGURU MEDITATION: Unhandeled exception error, application will exit!\n" << std::endl;
+		std::wcerr << L"\n\nGURU MEDITATION: Unhandeled exception error, application will exit!\n" << std::endl;
 	}
 #else
 	ret =  inetget_startup(argc, argv);

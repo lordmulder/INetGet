@@ -72,7 +72,7 @@ bool AbstractClient::wininet_init()
 		if(m_hInternet == NULL)
 		{
 			const DWORD error_code = GetLastError();
-			emit_message(std::wstring(L"InternetOpen() has failed:\n").append(Utils::win_error_string(error_code)), true);
+			set_error_text(std::wstring(L"InternetOpen() has failed:\n").append(Utils::win_error_string(error_code)));
 			return false;
 		}
 
@@ -121,21 +121,41 @@ bool AbstractClient::wininet_exit(void)
 }
 
 //=============================================================================
+// ERROR MESSAGE
+//=============================================================================
+
+std::wstring AbstractClient::get_error_text(void) const
+{
+	std::wstring retval;
+	{
+		Sync::Locker locker(m_mutex_error_txt);
+		retval = m_error_text;
+	}
+	return retval;
+}
+
+void AbstractClient::set_error_text(const std::wstring &text)
+{
+	Sync::Locker locker(m_mutex_error_txt);
+	m_error_text = text.empty() ? std::wstring(L"Operation completed successfully.") : text;
+}
+
+//=============================================================================
 // LISTENER SUPPORT
 //=============================================================================
 
 void AbstractClient::add_listener(AbstractListener &callback)
 {
-	Sync::Locker locker(m_mutexListeners);
+	Sync::Locker locker(m_mutex_listeners);
 	m_listeners.insert(&callback);
 }
 
-void AbstractClient::emit_message(const std::wstring message, const bool &critical)
+void AbstractClient::emit_message(const std::wstring message)
 {
-	Sync::Locker locker(m_mutexListeners);
+	Sync::Locker locker(m_mutex_listeners);
 	for(std::set<AbstractListener*>::const_iterator iter = m_listeners.cbegin(); iter != m_listeners.cend(); iter++)
 	{
-		(*iter)->onMessage(message, critical);
+		(*iter)->onMessage(message);
 	}
 }
 
@@ -225,7 +245,7 @@ bool AbstractClient::set_inet_options(void *const request, const uint32_t &optio
 	if(!InternetSetOption(request, option, (LPVOID)&value, sizeof(uint32_t)))
 	{
 		const DWORD error_code = GetLastError();
-		emit_message(std::wstring(L"InternetSetOption() function has failed:\n").append(Utils::win_error_string(error_code)), true);
+		set_error_text(std::wstring(L"InternetSetOption() function has failed:\n").append(Utils::win_error_string(error_code)));
 		return false;
 	}
 	return true;
@@ -237,7 +257,7 @@ bool AbstractClient::get_inet_options(void *const request, const uint32_t &optio
 	if(!InternetQueryOption(request, option, (LPVOID)&value, &buff_len))
 	{
 		const DWORD error_code = GetLastError();
-		emit_message(std::wstring(L"InternetQueryOption() function has failed:\n").append(Utils::win_error_string(error_code)), true);
+		set_error_text(std::wstring(L"InternetQueryOption() function has failed:\n").append(Utils::win_error_string(error_code)));
 		return false;
 	}
 	return (buff_len >= sizeof(uint32_t));
