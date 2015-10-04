@@ -120,6 +120,25 @@ bool Thread::join(const uint32_t &timeout)
 	return false;
 }
 
+bool Thread::join(const Sync::Signal &interrupt, const uint32_t &timeout)
+{
+	if(m_thread)
+	{
+		if(HANDLE hInterrupt = (HANDLE) interrupt.handle())
+		{
+			HANDLE handles[] = { (HANDLE) m_thread, hInterrupt, NULL };
+			const DWORD retval = WaitForMultipleObjects(2U, handles, FALSE, ((timeout > 0) ? timeout : INFINITE));
+			CloseHandle(hInterrupt);
+			return (retval == WAIT_OBJECT_0);
+		}
+		else
+		{
+			return join(timeout);
+		}
+	}
+	return false;
+}
+
 bool Thread::stop(const uint32_t &timeout, const bool &force)
 {
 	if(m_thread)

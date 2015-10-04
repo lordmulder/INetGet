@@ -77,6 +77,7 @@ namespace Sync
 
 		bool get(void) const;
 		bool await(const uint32_t &timeout) const;
+		uintptr_t handle() const;
 
 	private:
 		const Event &m_event;

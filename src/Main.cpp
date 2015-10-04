@@ -435,13 +435,13 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 	std::wcerr << L"Download in progress:" << std::endl;
 	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
 
-	while(!transfer_thread->join(125))
+	while(!transfer_thread->join(Zero::g_sigUserAbort, 250))
 	{
 		//Check for user abort
 		if(ABORTED_BY_USER)
 		{
 			std::wcerr << L"\b\b\babort!\n"<< std::endl;
-			transfer_thread->stop(1500, true);
+			transfer_thread->stop(1250, true);
 			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
@@ -541,13 +541,13 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 	}
 
 	//Wait for connection
-	while(!connector_thread->join(125))
+	while(!connector_thread->join(Zero::g_sigUserAbort))
 	{
 		//Check for user abort
 		if(ABORTED_BY_USER)
 		{
 			std::wcerr << L"--> Aborting!\n"<< std::endl;
-			connector_thread->stop(1500, true);
+			connector_thread->stop(1250, true);
 			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 			return EXIT_FAILURE;
 		}

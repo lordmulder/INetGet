@@ -37,6 +37,7 @@ public:
 
 	//Stop
 	bool join(const uint32_t &timeout = 0U);
+	bool join(const Sync::Signal &interrupt, const uint32_t &timeout = 0U);
 	bool stop(const uint32_t &timeout = 0U, const bool &force = false);
 
 	//Info

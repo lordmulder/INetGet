@@ -160,3 +160,13 @@ bool Sync::Signal::await(const uint32_t &timeout) const
 {
 	return m_event.await(timeout);
 }
+
+uintptr_t Sync::Signal::handle(void) const
+{
+	HANDLE retval = NULL;
+	if(DuplicateHandle(GetCurrentProcess(), (HANDLE) m_event.m_handle, GetCurrentProcess(), &retval, SYNCHRONIZE, FALSE, 0))
+	{
+		return (uintptr_t) retval;
+	}
+	return NULL;
+}
