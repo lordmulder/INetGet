@@ -242,7 +242,7 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ### Version 1.02 (2015-10-xx) ###
 
-* Moved all I/O operations into a separate "worker" thread in order to make the application more responsive.
+* All blocking I/O operations have been moved to separate "worker" threads in order to make the application more responsive.
 
 * Added "update" mode, i.e. re-download the existing file *only* if the server provides a *newer* version. Enable with  `--update` option.
 
