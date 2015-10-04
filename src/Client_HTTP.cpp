@@ -83,6 +83,7 @@ HttpClient::~HttpClient(void)
 
 bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
 {
+	Sync::Locker locker(m_mutex_main);
 	if(!wininet_init())
 	{
 		return false; /*WinINet failed to initialize*/
@@ -129,6 +130,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 
 bool HttpClient::close(void)
 {
+	Sync::Locker locker(m_mutex_main);
 	bool success = true;
 
 	//Close the request, if it currently exists
@@ -145,6 +147,79 @@ bool HttpClient::close(void)
 
 	set_error_text();
 	return success;
+}
+
+//=============================================================================
+// QUERY RESULT
+//=============================================================================
+
+bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, uint64_t &time_stamp, std::wstring &content_type, std::wstring &content_encd)
+{
+	success = false;
+	status_code = 0;
+	file_size = SIZE_UNKNOWN;
+	time_stamp = TIME_UNKNOWN;
+	content_type.clear();
+	content_encd.clear();
+
+	Sync::Locker locker(m_mutex_main);
+
+	if(m_hRequest == NULL)
+	{
+		set_error_text(std::wstring(L"INTERNAL ERROR: There currently is no active request!"));
+		return false; /*request not created yet*/
+	}
+
+	if(!get_header_int(m_hRequest, HTTP_QUERY_STATUS_CODE, status_code))
+	{
+		return false; /*couldn't get status code*/
+	}
+
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE,     content_type);
+	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd);
+
+	std::wstring content_length;
+	if(get_header_str(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
+	{
+		file_size = parse_file_size(content_length);
+	}
+
+	std::wstring last_modified;
+	if(get_header_str(m_hRequest, HTTP_QUERY_LAST_MODIFIED, last_modified))
+	{
+		time_stamp = Utils::parse_timestamp(last_modified);
+	}
+
+	set_error_text();
+	success = ((status_code >= 200) && (status_code < 300));
+	return true;
+}
+
+//=============================================================================
+// READ PAYLOAD
+//=============================================================================
+
+bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag)
+{
+	Sync::Locker locker(m_mutex_main);
+
+	if(m_hRequest == NULL)
+	{
+		set_error_text(std::wstring(L"INTERNAL ERROR: There currently is no active request!"));
+		return false; /*request not created yet*/
+	}
+
+	DWORD temp;
+	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
+	{
+		const DWORD error_code = GetLastError();
+		set_error_text(std::wstring(L"An error occurred while receiving data from the server:\n").append(Utils::win_error_string(error_code)));
+		return false;
+	}
+
+	set_error_text();
+	eof_flag = ((bytes_read = temp) < 1);
+	return true;
 }
 
 //=============================================================================
@@ -243,75 +318,6 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	}
 	
 	return (!m_user_aborted.get());
-}
-
-//=============================================================================
-// QUERY RESULT
-//=============================================================================
-
-bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_size, uint64_t &time_stamp, std::wstring &content_type, std::wstring &content_encd)
-{
-	success = false;
-	status_code = 0;
-	file_size = SIZE_UNKNOWN;
-	time_stamp = TIME_UNKNOWN;
-	content_type.clear();
-	content_encd.clear();
-
-	if(m_hRequest == NULL)
-	{
-		set_error_text(std::wstring(L"INTERNAL ERROR: There currently is no active request!"));
-		return false; /*request not created yet*/
-	}
-
-	if(!get_header_int(m_hRequest, HTTP_QUERY_STATUS_CODE, status_code))
-	{
-		return false; /*couldn't get status code*/
-	}
-
-	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_TYPE,     content_type);
-	get_header_str(m_hRequest, HTTP_QUERY_CONTENT_ENCODING, content_encd);
-
-	std::wstring content_length;
-	if(get_header_str(m_hRequest, HTTP_QUERY_CONTENT_LENGTH, content_length))
-	{
-		file_size = parse_file_size(content_length);
-	}
-
-	std::wstring last_modified;
-	if(get_header_str(m_hRequest, HTTP_QUERY_LAST_MODIFIED, last_modified))
-	{
-		time_stamp = Utils::parse_timestamp(last_modified);
-	}
-
-	set_error_text();
-	success = ((status_code >= 200) && (status_code < 300));
-	return true;
-}
-
-//=============================================================================
-// READ PAYLOAD
-//=============================================================================
-
-bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag)
-{
-	if(m_hRequest == NULL)
-	{
-		set_error_text(std::wstring(L"INTERNAL ERROR: There currently is no active request!"));
-		return false; /*request not created yet*/
-	}
-
-	DWORD temp;
-	if(!InternetReadFile(m_hRequest, out_buff, buff_size, &temp))
-	{
-		const DWORD error_code = GetLastError();
-		set_error_text(std::wstring(L"An error occurred while receiving data from the server:\n").append(Utils::win_error_string(error_code)));
-		return false;
-	}
-
-	set_error_text();
-	eof_flag = ((bytes_read = temp) < 1);
-	return true;
 }
 
 //=============================================================================

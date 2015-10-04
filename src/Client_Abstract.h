@@ -90,6 +90,9 @@ protected:
 	const double m_timeout_rcv;
 	const uint32_t m_connect_retry;
 
+	//Thread-safety
+	Sync::Mutex m_mutex_main;
+
 	//Handle
 	void *m_hInternet;
 
