@@ -22,6 +22,8 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
+
 #include "Sync.h"
 
 class Thread
@@ -35,20 +37,29 @@ public:
 
 	//Stop
 	bool join(const uint32_t &timeout = 0U);
-	void stop(void);
-	bool kill(void);
+	bool stop(const uint32_t &timeout = 0U, const bool &force = false);
 
 	//Info
-	bool is_running(void);
+	bool is_running(void) const;
+	std::wstring get_error_text(void) const;
+	uint32_t get_result(void) const;
 
 private:
-	Sync::Event m_event_stop;
+	void close_handle(void);
 	static uint32_t __stdcall thread_start(void *const data);
+
+	Sync::Event m_event_stop;
+	Sync::Signal m_signal_stop;
+
+	mutable Sync::Mutex m_mutex_error_txt;
+	std::wstring m_error_text;
+
 	uintptr_t m_thread;
 
 protected:
 	virtual uint32_t main(void) = 0;
+
+	void set_error_text(const std::wstring &text = std::wstring());
 	bool is_stopped(void);
-	Sync::Signal m_signal_stop;
 };
 
