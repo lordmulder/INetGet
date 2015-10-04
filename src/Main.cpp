@@ -49,10 +49,6 @@
 #include <sstream>
 #include <algorithm>
 
-//Globals
-static std::unique_ptr<AbstractClient> g_client;
-static std::unique_ptr<AbstractSink>   g_sink;
-
 //Externals
 namespace Zero
 {
@@ -307,7 +303,7 @@ public:
 		m_client(client),
 		m_transferred_bytes(0ui64)
 	{
-		m_buffer.reset(new uint8_t[BUFF_SIZE]);
+		m_priority.set(3);
 	}
 
 	uint64_t get_transferred_bytes(void)
@@ -328,7 +324,7 @@ protected:
 		while(!(eof_flag || (abort_flag = is_stopped())))
 		{
 			size_t bytes_read = 0;
-			if(!m_client->read_data(m_buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
+			if(!m_client->read_data(m_buffer, BUFF_SIZE, bytes_read, eof_flag))
 			{
 				set_error_text(m_client->get_error_text());
 				return TRANSFER_ERR_INET;
@@ -339,7 +335,7 @@ protected:
 				m_transferred_bytes.add(bytes_read);
 				if(!(abort_flag = is_stopped()))
 				{
-					if(!m_sink->write(m_buffer.get(), bytes_read))
+					if(!m_sink->write(m_buffer, bytes_read))
 					{
 						return TRANSFER_ERR_SINK;
 					}
@@ -354,8 +350,8 @@ private:
 	AbstractSink *const m_sink;
 	AbstractClient *const m_client;
 
-	static const size_t BUFF_SIZE = 16384;
-	std::unique_ptr<uint8_t[]> m_buffer;
+	static const size_t BUFF_SIZE = 8192;
+	uint8_t m_buffer[BUFF_SIZE];
 	Sync::Interlocked<uint64_t> m_transferred_bytes;
 };
 
@@ -363,10 +359,11 @@ private:
 // PROCESS
 //=============================================================================
 
-static int transfer_file(const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
+static int transfer_file(AbstractClient *const client, const std::wstring &url_string, const uint64_t &file_size, const uint64_t &timestamp, const std::wstring &outFileName, const bool &alert, const bool &keep_failed)
 {
 	//Open output file
-	if(!create_sink(g_sink, outFileName, timestamp, keep_failed))
+	std::unique_ptr<AbstractSink> sink;
+	if(!create_sink(sink, outFileName, timestamp, keep_failed))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << L"ERROR: Failed to open the sink, unable to download file!\n" << std::endl;
@@ -377,12 +374,12 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 	uint8_t index = 0, update_counter = 0;
 	uint64_t total_bytes_last = 0ui64;
 	double current_rate = std::numeric_limits<double>::quiet_NaN();
-	Average rate_estimate(125);
+	Average rate_estimate(50);
 	Timer timer_total, timer_rate;
 
 	//Start thread
-	std::unique_ptr<TransferThread> transferThread (new TransferThread(g_sink.get(), g_client.get()));
-	if(!transferThread->start())
+	std::unique_ptr<TransferThread> transfer_thread (new TransferThread(sink.get(), client));
+	if(!transfer_thread->start())
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		std::wcerr << L"ERROR: Failed to start the file transfer thread!\n" << std::endl;
@@ -391,16 +388,16 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
-	print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
+	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
 
-	while(!transferThread->join(125))
+	while(!transfer_thread->join(125))
 	{
 		//Check for user abort
 		if(ABORTED_BY_USER)
 		{
 			std::wcerr << L"\b\b\babort!\n"<< std::endl;
-			transferThread->stop(1500, true);
-			g_sink->close(false);
+			transfer_thread->stop(1500, true);
+			sink->close(false);
 			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
@@ -408,7 +405,7 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 		//Update the transfer-rate estimate
 		if(++update_counter >= 4)
 		{
-			const uint64_t total_bytes = transferThread->get_transferred_bytes();
+			const uint64_t total_bytes = transfer_thread->get_transferred_bytes();
 			current_rate = rate_estimate.update(double(total_bytes - total_bytes_last) / timer_rate.query());
 			timer_rate.reset();
 			total_bytes_last = total_bytes, update_counter = 0;
@@ -417,16 +414,16 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 		//Update progress
 		if(!ABORTED_BY_USER)
 		{
-			print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
+			print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
 		}
 	}
 
 	//Check thread result
-	const uint32_t thread_result = transferThread->get_result();
+	const uint32_t thread_result = transfer_thread->get_result();
 	if(thread_result != TransferThread::TRANSFER_COMPLETE)
 	{
 		std::wcerr << L"\b\b\bfailed\n" << std::endl;
-		const std::wstring error_text = g_client->get_error_text();
+		const std::wstring error_text = transfer_thread->get_error_text();
 		switch(thread_result)
 		{
 		case TransferThread::TRANSFER_ERR_INET:
@@ -446,19 +443,18 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 			std::wcerr << L"ERROR: The operation failed for an unknwon reason!\n" << std::endl;
 			break;
 		}
-		g_sink->close(false);
 		TRIGGER_SYSTEM_SOUND(alert, false);
 		return EXIT_FAILURE;
 	}
 
 	//Finalize progress
-	print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
+	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
 	const double total_time = timer_total.query();
-	const double average_rate = double(transferThread->get_transferred_bytes()) / total_time;
+	const double average_rate = double(transfer_thread->get_transferred_bytes()) / total_time;
 
 	//Flush and close the sink
 	std::wcerr << L"\b\b\bdone\n\nFlushing output buffers... " << std::flush;
-	g_sink->close(true);
+	sink->close(true);
 
 	//Report total time and average download rate
 	TRIGGER_SYSTEM_SOUND(alert, true);
@@ -468,7 +464,7 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 	return EXIT_SUCCESS;
 }
 
-static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
+static int retrieve_url(AbstractClient *const client, const std::wstring &url_string, const http_verb_t &http_verb, const URL &url, const std::wstring &post_data, const std::wstring &referrer, const std::wstring &outFileName, const bool &set_ftime, const bool &update_mode, const bool &alert, const bool &keep_failed)
 {
 	//Initialize the post data string
 	const std::string post_data_encoded = post_data.empty() ? std::string() : ((post_data.compare(L"-") != 0) ? URL::urlEncode(Utils::wide_str_to_utf8(post_data)) : URL::urlEncode(stdin_get_line()));
@@ -482,7 +478,7 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 
 	//Create the HTTPS connection/request
 	std::wcerr << L"Connecting to " << url.getHostName() << L':' << url.getPortNo() << L", please wait..." << std::endl;
-	if(!g_client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
+	if(!client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
 	{
 		std::wcerr << std::endl;
 		TRIGGER_SYSTEM_SOUND(alert, false);
@@ -492,7 +488,7 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 		}
 		else
 		{
-			const std::wstring error_text = g_client->get_error_text();
+			const std::wstring error_text = client->get_error_text();
 			if(!error_text.empty())
 			{
 				std::wcerr << error_text << L'\n' << std::endl;
@@ -519,10 +515,10 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 	}
 
 	//Query result information
-	if(!g_client->result(success, status_code, file_size, timestamp, content_type, content_encd))
+	if(!client->result(success, status_code, file_size, timestamp, content_type, content_encd))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
-		const std::wstring error_text = g_client->get_error_text();
+		const std::wstring error_text = client->get_error_text();
 		if(!error_text.empty())
 		{
 			std::wcerr << error_text << L'\n' << std::endl;
@@ -559,7 +555,7 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 		return EXIT_FAILURE;
 	}
 
-	return transfer_file(url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
+	return transfer_file(client, url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
 }
 
 //=============================================================================
@@ -614,13 +610,14 @@ int inetget_main(const int argc, const wchar_t *const argv[])
 	Utils::set_console_title(std::wstring(L"INetGet - ").append(url_string));
 
 	//Create the HTTP(S) client
+	std::unique_ptr<AbstractClient> client;
 	StatusListener listener;
-	if(!create_client(g_client, listener, url.getScheme(), params))
+	if(!create_client(client, listener, url.getScheme(), params))
 	{
 		std::wcerr << "Specified protocol is unsupported! Only HTTP(S) and FTP are allowed.\n" << std::endl;
 		return EXIT_FAILURE;
 	}
 
 	//Retrieve the URL
-	return retrieve_url(url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
+	return retrieve_url(client.get(), url_string, params.getHttpVerb(), url, params.getPostData(), params.getReferrer(), params.getOutput(), params.getSetTimestamp(), params.getUpdateMode(), params.getEnableAlert(), params.getKeepFailed());
 }

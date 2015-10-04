@@ -23,7 +23,6 @@
 
 #include <deque>
 #include <vector>
-#include <unordered_map>
 #include <stdint.h>
 
 class Average
@@ -35,10 +34,7 @@ public:
 	double update(const double &value);
 
 private:
-	void initialize_weights(const uint32_t filter_len);
-	
 	const uint32_t m_queue_len;
-	
 	std::deque<double> m_values;
-	std::unordered_map<uint32_t,std::vector<double>> m_weights;
+	double m_current;
 };

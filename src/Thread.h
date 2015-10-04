@@ -64,5 +64,6 @@ protected:
 	virtual uint32_t main(void) = 0;
 	void set_error_text(const std::wstring &text = std::wstring());
 	bool is_stopped(void);
+	Sync::Interlocked<int8_t> m_priority;
 };
 

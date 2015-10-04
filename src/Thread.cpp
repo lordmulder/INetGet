@@ -38,12 +38,30 @@
 // THREAD ENTRY POINT
 //=============================================================================
 
+static int map_priority(const int8_t &priority)
+{
+	switch(std::max(int8_t(-3), std::min(int8_t(3), priority)))
+	{
+		case  3: return THREAD_PRIORITY_TIME_CRITICAL;
+		case  2: return THREAD_PRIORITY_HIGHEST;
+		case  1: return THREAD_PRIORITY_ABOVE_NORMAL;
+		case  0: return THREAD_PRIORITY_NORMAL;
+		case -1: return THREAD_PRIORITY_BELOW_NORMAL;
+		case -2: return THREAD_PRIORITY_LOWEST;
+		case -3: return THREAD_PRIORITY_IDLE;
+	}
+	throw std::runtime_error("Bad priority value!");
+}
+
 uint32_t __stdcall Thread::thread_start(void *const data)
 {
 	if(Thread *const thread = ((Thread*)data))
 	{
-		const DWORD ret = thread->main();
-		return (ret == STILL_ACTIVE) ? (ret + 1) : ret;
+		if(SetThreadPriority(GetCurrentThread(), map_priority(thread->m_priority.get())))
+		{
+			const DWORD ret = thread->main();
+			return (ret == STILL_ACTIVE) ? (ret + 1) : ret;
+		}
 	}
 	return DWORD(-1L);
 }
@@ -55,7 +73,8 @@ uint32_t __stdcall Thread::thread_start(void *const data)
 Thread::Thread()
 :
 	m_signal_stop(m_event_stop),
-	m_error_text(std::wstring())
+	m_error_text(std::wstring()),
+	m_priority(0)
 {
 	m_thread = NULL;
 }

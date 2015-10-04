@@ -20,86 +20,57 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "Average.h"
+#include "Compat.h"
 
 //CRT
 #include <stdint.h>
 #include <limits>
+#include <algorithm>
 
 //Const
 static const uint32_t MIN_LEN = 3;
 static const double PI = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
+static const double ALPHA = 0.14142135623730950488016887242097;
 
 Average::Average(const uint32_t &queue_len)
 :
-	m_queue_len(queue_len)
+	m_queue_len(queue_len),
+	m_current(std::numeric_limits<double>::quiet_NaN())
 {
-	if((m_queue_len < MIN_LEN) || ((m_queue_len % 2) != 1))
-	{
-		throw std::runtime_error("Filter size must be a positive and odd value!");
-	}
-	
-	for(uint32_t len = MIN_LEN; len <= queue_len; len += 2)
-	{
-		initialize_weights(len);
-	}
 }
 
 Average::~Average()
 {
 }
 
-void Average::initialize_weights(const uint32_t filter_len)
-{
-	std::vector<double> weights(filter_len, 0.0);
-	double totalWeight = 0.0;
-
-	const double sigma = (((double(filter_len) / 2.0) - 1.0) / 3.0) + (1.0 / 3.0);
-	const uint32_t offset = filter_len / 2;
-	const double c1 = 1.0 / (sigma * sqrt(2.0 * PI));
-	const double c2 = 2.0 * pow(sigma, 2.0);
-
-	for(uint32_t i = 0; i < filter_len; i++)
-	{
-		const int32_t x = int32_t(i) - int32_t(offset);
-		weights[i] = c1 * exp(-(pow(x, 2.0) / c2));
-		totalWeight += weights[i];
-	}
-
-	const double adjust = 1.0 / totalWeight;
-	for(uint32_t i = 0; i < filter_len; i++)
-	{
-		weights[i] *= adjust;
-	}
-
-	m_weights.insert(std::make_pair(filter_len, weights));
-}
-
 double Average::update(const double &value)
 {
-	m_values.push_front(value);
+	m_values.push_back(value);
 	while(m_values.size() > m_queue_len)
 	{
-		m_values.pop_back();
+		m_values.pop_front();
 	}
 
 	if(m_values.size() >= MIN_LEN)
 	{
-		const uint32_t key = ((m_values.size() % 2) == 1) ? uint32_t(m_values.size()) : uint32_t(m_values.size() - 1U);
+		std::vector<double> sorted(m_values.cbegin(), m_values.cend());
+		std::sort(sorted.begin(), sorted.end());
 
-		const std::unordered_map<uint32_t,std::vector<double>>::const_iterator weights = m_weights.find(key);
-		if(weights == m_weights.end())
+		const size_t skip_count = sorted.size() / 10U;
+		const size_t limit = sorted.size() - skip_count;
+		
+		double mean_value = 0.0;
+		for(size_t i = skip_count; i < limit; i++)
 		{
-			throw std::runtime_error("Weights for current size not found!");
+			mean_value += (sorted[i] / double(sorted.size()));
 		}
 
-		std::deque<double>::const_iterator value_iter = m_values.cbegin();
-		double accumulator = 0.0;
-		for(std::vector<double>::const_iterator weights_iter = weights->second.cbegin(); weights_iter != weights->second.cend(); weights_iter++, value_iter++)
+		if(ISNAN(m_current))
 		{
-			accumulator += (*value_iter) * (*weights_iter);
+			m_current = mean_value;
 		}
 
-		return accumulator;
+		return m_current = (mean_value * ALPHA) + (m_current * (1.0 - ALPHA));
 	}
 
 	return std::numeric_limits<double>::quiet_NaN();
