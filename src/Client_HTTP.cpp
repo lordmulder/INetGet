@@ -83,7 +83,7 @@ HttpClient::~HttpClient(void)
 
 bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
 {
-	Sync::Locker locker(m_mutex_main);
+	Sync::Locker locker(m_mutex);
 	if(!wininet_init())
 	{
 		return false; /*WinINet failed to initialize*/
@@ -130,7 +130,7 @@ bool HttpClient::open(const http_verb_t &verb, const URL &url, const std::string
 
 bool HttpClient::close(void)
 {
-	Sync::Locker locker(m_mutex_main);
+	Sync::Locker locker(m_mutex);
 	bool success = true;
 
 	//Close the request, if it currently exists
@@ -162,7 +162,7 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_siz
 	content_type.clear();
 	content_encd.clear();
 
-	Sync::Locker locker(m_mutex_main);
+	Sync::Locker locker(m_mutex);
 
 	if(m_hRequest == NULL)
 	{
@@ -201,7 +201,7 @@ bool HttpClient::result(bool &success, uint32_t &status_code, uint64_t &file_siz
 
 bool HttpClient::read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag)
 {
-	Sync::Locker locker(m_mutex_main);
+	Sync::Locker locker(m_mutex);
 
 	if(m_hRequest == NULL)
 	{

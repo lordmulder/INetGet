@@ -41,8 +41,13 @@ public:
 
 	//Info
 	bool is_running(void) const;
-	std::wstring get_error_text(void) const;
 	uint32_t get_result(void) const;
+
+	//Error text
+	std::wstring get_error_text(void) const
+	{
+		return m_error_text.get();
+	}
 
 private:
 	void close_handle(void);
@@ -51,14 +56,12 @@ private:
 	Sync::Event m_event_stop;
 	Sync::Signal m_signal_stop;
 
-	mutable Sync::Mutex m_mutex_error_txt;
-	std::wstring m_error_text;
+	Sync::Interlocked<std::wstring> m_error_text;
 
 	uintptr_t m_thread;
 
 protected:
 	virtual uint32_t main(void) = 0;
-
 	void set_error_text(const std::wstring &text = std::wstring());
 	bool is_stopped(void);
 };

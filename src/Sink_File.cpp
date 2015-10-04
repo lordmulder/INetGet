@@ -56,6 +56,8 @@ FileSink::~FileSink(void)
 
 bool FileSink::open(void)
 {
+	Sync::Locker locker(m_mutex);
+
 	//Close existign file, just to be sure
 	close(false);
 
@@ -75,6 +77,7 @@ bool FileSink::open(void)
 bool FileSink::close(const bool &success)
 {
 	bool okay = true;
+	Sync::Locker locker(m_mutex);
 
 	if(FILE *const hFile = (FILE*)m_handle)
 	{
@@ -103,6 +106,8 @@ bool FileSink::close(const bool &success)
 
 bool FileSink::write(uint8_t *const buffer, const size_t &count)
 {
+	Sync::Locker locker(m_mutex);
+
 	if(FILE *const hFile = (FILE*)m_handle)
 	{
 		if(count > 0)

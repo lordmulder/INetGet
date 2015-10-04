@@ -31,6 +31,9 @@
 #include <process.h>
 #include <algorithm>
 
+//Internal
+#include "Utils.h"
+
 //=============================================================================
 // THREAD ENTRY POINT
 //=============================================================================
@@ -51,7 +54,8 @@ uint32_t __stdcall Thread::thread_start(void *const data)
 
 Thread::Thread()
 :
-	m_signal_stop(m_event_stop)
+	m_signal_stop(m_event_stop),
+	m_error_text(std::wstring())
 {
 	m_thread = NULL;
 }
@@ -142,17 +146,6 @@ uint32_t Thread::get_result(void) const
 	return DWORD(-1);
 }
 
-std::wstring Thread::get_error_text(void) const
-{
-	std::wstring retval;
-	{
-		Sync::Locker locker(m_mutex_error_txt);
-		retval = m_error_text;
-	}
-	return retval;
-}
-
-
 //=============================================================================
 // PROTECTED FUNCTIONS
 //=============================================================================
@@ -164,8 +157,9 @@ bool Thread::is_stopped(void)
 
 void Thread::set_error_text(const std::wstring &text)
 {
-	Sync::Locker locker(m_mutex_error_txt);
-	m_error_text = text.empty() ? std::wstring(L"Operation completed successfully.") : text;
+	std::wstring error_text(text);
+	Utils::trim(error_text);
+	m_error_text.set(error_text.empty() ? std::wstring() : error_text);
 }
 
 //=============================================================================

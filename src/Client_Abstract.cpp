@@ -51,6 +51,8 @@ AbstractClient::AbstractClient(const Sync::Signal &user_aborted, const bool &dis
 	m_agent_str(agent_str),
 	m_connect_retry(connect_retry),
 	m_verbose(verbose),
+	m_error_text(std::wstring()),
+	m_listeners(std::set<AbstractListener*>()),
 	m_hInternet(NULL)
 {
 }
@@ -124,20 +126,11 @@ bool AbstractClient::wininet_exit(void)
 // ERROR MESSAGE
 //=============================================================================
 
-std::wstring AbstractClient::get_error_text(void) const
-{
-	std::wstring retval;
-	{
-		Sync::Locker locker(m_mutex_error_txt);
-		retval = m_error_text;
-	}
-	return retval;
-}
-
 void AbstractClient::set_error_text(const std::wstring &text)
 {
-	Sync::Locker locker(m_mutex_error_txt);
-	m_error_text = text.empty() ? std::wstring(L"Operation completed successfully.") : text;
+	std::wstring error_text(text);
+	Utils::trim(error_text);
+	m_error_text.set(error_text.empty() ? std::wstring() : error_text);
 }
 
 //=============================================================================
@@ -146,14 +139,13 @@ void AbstractClient::set_error_text(const std::wstring &text)
 
 void AbstractClient::add_listener(AbstractListener &callback)
 {
-	Sync::Locker locker(m_mutex_listeners);
 	m_listeners.insert(&callback);
 }
 
 void AbstractClient::emit_message(const std::wstring message)
 {
-	Sync::Locker locker(m_mutex_listeners);
-	for(std::set<AbstractListener*>::const_iterator iter = m_listeners.cbegin(); iter != m_listeners.cend(); iter++)
+	const std::set<AbstractListener*> listeners = m_listeners.get();
+	for(std::set<AbstractListener*>::const_iterator iter = listeners.cbegin(); iter != listeners.cend(); iter++)
 	{
 		(*iter)->onMessage(message);
 	}

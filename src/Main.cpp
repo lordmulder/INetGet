@@ -63,15 +63,7 @@ namespace Zero
 // HELPER MACROS
 //=============================================================================
 
-#define CHECK_USER_ABORT() do \
-{ \
-	if(Zero::g_sigUserAbort.get()) \
-	{ \
-		std::wcerr << L"\n\nSIGINT: Operation aborted by the user !!!" << std::endl; \
-		exit(EXIT_FAILURE); \
-	} \
-} \
-while(0)
+#define ABORTED_BY_USER (Zero::g_sigUserAbort.get())
 
 #define TRIGGER_SYSTEM_SOUND(X,Y) do \
 { \
@@ -225,67 +217,62 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 	std::wcerr << std::endl;
 }
 
-static inline void print_progress(const std::wstring url_string, uint64_t &total_bytes, const uint64_t &file_size, Timer &timer_update, const double &current_rate, uint8_t &index, const bool &force = false)
+static inline void print_progress(const std::wstring url_string, uint64_t total_bytes, const uint64_t &file_size, const double &current_rate, uint8_t &index)
 {
-	static const wchar_t SPINNER[4] = { L'-', L'\\', L'/', L'-' };
+	static const wchar_t SPINNER[4] = { L'-', L'\\', L'|', L'/' };
+	const std::ios::fmtflags stateBackup(std::wcout.flags());
+	std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << L"\r[" << SPINNER[(index++) & 3] << L"] ";
 
-	if(force || (timer_update.query() > 0.2))
+	if(file_size != AbstractClient::SIZE_UNKNOWN)
 	{
-		const std::ios::fmtflags stateBackup(std::wcout.flags());
-		std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << L"\r[" << SPINNER[(index++) & 3] << L"] ";
+		const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
 
-		if(file_size != AbstractClient::SIZE_UNKNOWN)
+		if(!ISNAN(current_rate))
 		{
-			const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
-
-			if(!ISNAN(current_rate))
+			if(current_rate > 0.0)
 			{
-				if(current_rate > 0.0)
+				const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
+				if(time_left > 3)
 				{
-					const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
-					if(time_left > 3)
-					{
-						std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, " << Utils::second_to_string(time_left) << L" remaining...";
-					}
-					else
-					{
-						std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, almost finished...";
-					}
+					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, " << Utils::second_to_string(time_left) << L" remaining...";
 				}
 				else
 				{
-					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
+					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, almost finished...";
 				}
 			}
 			else
 			{
-				std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, please stand by...";
+				std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
 			}
-
-			std::wostringstream title;
-			title << std::setprecision(1) << std::fixed << std::setw(0) << L"INetGet [" << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L"] - " << url_string;
-			Utils::set_console_title(title.str());
 		}
 		else
 		{
-			if(!ISNAN(current_rate))
-			{
-				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
-			}
-			else
-			{
-				std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, please stand by...";
-			}
-
-			std::wostringstream title;
-			title << L"INetGet [" << Utils::nbytes_to_string(double(total_bytes)) << L"] - " << url_string;
-			Utils::set_console_title(title.str());
+			std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, please stand by...";
 		}
 
-		std::wcerr << L"    " << std::flush;
-		std::wcout.flags(stateBackup);
-		timer_update.reset();
+		std::wostringstream title;
+		title << std::setprecision(1) << std::fixed << std::setw(0) << L"INetGet [" << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L"] - " << url_string;
+		Utils::set_console_title(title.str());
 	}
+	else
+	{
+		if(!ISNAN(current_rate))
+		{
+			std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
+		}
+		else
+		{
+			std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, please stand by...";
+		}
+
+		std::wostringstream title;
+		title << L"INetGet [" << Utils::nbytes_to_string(double(total_bytes)) << L"] - " << url_string;
+		Utils::set_console_title(title.str());
+	}
+
+	std::wcerr << L"    " << std::flush;
+	std::wcout.flags(stateBackup);
 }
 
 //=============================================================================
@@ -308,22 +295,68 @@ private:
 };
 
 //=============================================================================
-// THREAD TEST
+// TRANSFER THREAD
 //=============================================================================
 
-class MyThread : public Thread
+class TransferThread : public Thread
 {
+public:
+	TransferThread(AbstractSink *const sink, AbstractClient *const client)
+	:
+		m_sink(sink),
+		m_client(client),
+		m_transferred_bytes(0ui64)
+	{
+		m_buffer.reset(new uint8_t[BUFF_SIZE]);
+	}
+
+	uint64_t get_transferred_bytes(void)
+	{
+		return m_transferred_bytes.get();
+	}
+
+	static const uint32_t TRANSFER_COMPLETE = 0;
+	static const uint32_t TRANSFER_ERR_INET = 1;
+	static const uint32_t TRANSFER_ERR_SINK = 2;
+	static const uint32_t TRANSFER_ERR_ABRT = 3;
+
 protected:
 	virtual uint32_t main(void)
 	{
-		while(!is_stopped())
+		bool eof_flag = false, abort_flag = false;
+
+		while(!(eof_flag || (abort_flag = is_stopped())))
 		{
-			std::wcerr << L"TEST" << std::endl;
-			Sleep(500);
+			size_t bytes_read = 0;
+			if(!m_client->read_data(m_buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
+			{
+				set_error_text(m_client->get_error_text());
+				return TRANSFER_ERR_INET;
+			}
+
+			if(bytes_read > 0)
+			{
+				m_transferred_bytes.add(bytes_read);
+				if(!(abort_flag = is_stopped()))
+				{
+					if(!m_sink->write(m_buffer.get(), bytes_read))
+					{
+						return TRANSFER_ERR_SINK;
+					}
+				}
+			}
 		}
 
-		return 0;
+		return abort_flag ? TRANSFER_ERR_ABRT : TRANSFER_COMPLETE;
 	}
+
+private:
+	AbstractSink *const m_sink;
+	AbstractClient *const m_client;
+
+	static const size_t BUFF_SIZE = 16384;
+	std::unique_ptr<uint8_t[]> m_buffer;
+	Sync::Interlocked<uint64_t> m_transferred_bytes;
 };
 
 //=============================================================================
@@ -340,68 +373,88 @@ static int transfer_file(const std::wstring &url_string, const uint64_t &file_si
 		return EXIT_FAILURE;
 	}
 
-	//Allocate buffer
-	static const size_t BUFF_SIZE = 16384;
-	std::unique_ptr<uint8_t[]> buffer(new uint8_t[BUFF_SIZE]);
-
 	//Initialize local variables
-	Timer timer_start, timer_transfer, timer_update;
-	uint64_t total_bytes = 0ui64, transferred_bytes = 0ui64;
-	uint8_t index = 0;
+	uint8_t index = 0, update_counter = 0;
+	uint64_t total_bytes_last = 0ui64;
+	double current_rate = std::numeric_limits<double>::quiet_NaN();
 	Average rate_estimate(125);
-	bool eof_flag = false;
-	double current_rate = std::numeric_limits<double>::quiet_NaN();;
+	Timer timer_total, timer_rate;
+
+	//Start thread
+	std::unique_ptr<TransferThread> transferThread (new TransferThread(g_sink.get(), g_client.get()));
+	if(!transferThread->start())
+	{
+		TRIGGER_SYSTEM_SOUND(alert, false);
+		std::wcerr << L"ERROR: Failed to start the file transfer thread!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
-	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
+	print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
 
-	//Download the file now!
-	while(!eof_flag)
+	while(!transferThread->join(125))
 	{
-		size_t bytes_read = 0;
-
-		CHECK_USER_ABORT();
-		if(!g_client->read_data(buffer.get(), BUFF_SIZE, bytes_read, eof_flag))
+		//Check for user abort
+		if(ABORTED_BY_USER)
 		{
-			std::wcerr << L"\b\b\bfailed\n\n" << g_client->get_error_text() << L'\n' << std::endl;
-			std::wcerr << L"ERROR: Failed to receive incoming data, download has been aborted!\n" << std::endl;
+			std::wcerr << L"\b\b\babort!\n"<< std::endl;
+			transferThread->stop(1500, true);
 			g_sink->close(false);
-			TRIGGER_SYSTEM_SOUND(alert, false);
+			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
 
-		if(bytes_read > 0)
+		//Update the transfer-rate estimate
+		if(++update_counter >= 4)
 		{
-			CHECK_USER_ABORT();
-			transferred_bytes += bytes_read;
-			total_bytes += bytes_read;
-
-			const double interval = timer_transfer.query();
-			if(interval >= 0.5)
-			{
-				current_rate = rate_estimate.update(double(transferred_bytes) / interval);
-				timer_transfer.reset();
-				transferred_bytes = 0ui64;
-			}
-
-			if(!g_sink->write(buffer.get(), bytes_read))
-			{
-				std::wcerr << L"\b\b\bfailed\n\n" << std::endl;
-				std::wcerr << L"ERROR: Failed to write data to sink, download has been aborted!\n" << std::endl;
-				g_sink->close(false);
-				TRIGGER_SYSTEM_SOUND(alert, false);
-				return EXIT_FAILURE;
-			}
+			const uint64_t total_bytes = transferThread->get_transferred_bytes();
+			current_rate = rate_estimate.update(double(total_bytes - total_bytes_last) / timer_rate.query());
+			timer_rate.reset();
+			total_bytes_last = total_bytes, update_counter = 0;
 		}
 
-		CHECK_USER_ABORT();
-		print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index);
+		//Update progress
+		if(!ABORTED_BY_USER)
+		{
+			print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
+		}
+	}
+
+	//Check thread result
+	const uint32_t thread_result = transferThread->get_result();
+	if(thread_result != TransferThread::TRANSFER_COMPLETE)
+	{
+		std::wcerr << L"\b\b\bfailed\n" << std::endl;
+		const std::wstring error_text = g_client->get_error_text();
+		switch(thread_result)
+		{
+		case TransferThread::TRANSFER_ERR_INET:
+			if(!error_text.empty())
+			{
+				std::wcerr << error_text << L'\n' << std::endl;
+			}
+			std::wcerr << L"ERROR: Failed to receive incoming data, download has failed!\n" << std::endl;
+			break;
+		case TransferThread::TRANSFER_ERR_SINK:
+			std::wcerr << L"ERROR: Failed to write data to sink, download has failed!\n" << std::endl;
+			break;
+		case TransferThread::TRANSFER_ERR_ABRT:
+			std::wcerr << L"ERROR: The operation has been aborted !!!\n" << std::endl;
+			break;
+		default:
+			std::wcerr << L"ERROR: The operation failed for an unknwon reason!\n" << std::endl;
+			break;
+		}
+		g_sink->close(false);
+		TRIGGER_SYSTEM_SOUND(alert, false);
+		return EXIT_FAILURE;
 	}
 
 	//Finalize progress
-	print_progress(url_string, total_bytes, file_size, timer_update, current_rate, index, true);
-	const double total_time = timer_start.query(), average_rate = total_bytes / total_time;
+	print_progress(url_string, transferThread->get_transferred_bytes(), file_size, current_rate, index);
+	const double total_time = timer_total.query();
+	const double average_rate = double(transferThread->get_transferred_bytes()) / total_time;
 
 	//Flush and close the sink
 	std::wcerr << L"\b\b\bdone\n\nFlushing output buffers... " << std::flush;
@@ -431,9 +484,21 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 	std::wcerr << L"Connecting to " << url.getHostName() << L':' << url.getPortNo() << L", please wait..." << std::endl;
 	if(!g_client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
 	{
+		std::wcerr << std::endl;
 		TRIGGER_SYSTEM_SOUND(alert, false);
-		std::wcerr << L'\n' << g_client->get_error_text() << L'\n' << std::endl;
-		std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
+		if(ABORTED_BY_USER)
+		{
+			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
+		}
+		else
+		{
+			const std::wstring error_text = g_client->get_error_text();
+			if(!error_text.empty())
+			{
+				std::wcerr << error_text << L'\n' << std::endl;
+			}
+			std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
+		}
 		return EXIT_FAILURE;
 	}
 
@@ -446,12 +511,22 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 	std::wstring content_type, content_encd;
 	uint64_t file_size, timestamp;
 
+	//Check for user abort
+	if(ABORTED_BY_USER)
+	{
+		std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	//Query result information
-	CHECK_USER_ABORT();
 	if(!g_client->result(success, status_code, file_size, timestamp, content_type, content_encd))
 	{
 		TRIGGER_SYSTEM_SOUND(alert, false);
-		std::wcerr << g_client->get_error_text() << L'\n' << std::endl;
+		const std::wstring error_text = g_client->get_error_text();
+		if(!error_text.empty())
+		{
+			std::wcerr << error_text << L'\n' << std::endl;
+		}
 		std::wcerr << "ERROR: Failed to query the response status!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
@@ -477,7 +552,13 @@ static int retrieve_url(const std::wstring &url_string, const http_verb_t &http_
 		return EXIT_FAILURE;
 	}
 
-	CHECK_USER_ABORT();
+	//Check for user abort
+	if(ABORTED_BY_USER)
+	{
+		std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	return transfer_file(url_string, file_size, (set_ftime ? timestamp : 0), outFileName, alert, keep_failed);
 }
 

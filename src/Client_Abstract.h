@@ -60,7 +60,10 @@ public:
 	virtual bool read_data(uint8_t *out_buff, const uint32_t &buff_size, size_t &bytes_read, bool &eof_flag) = 0;
 
 	//Error message
-	std::wstring get_error_text() const;
+	std::wstring get_error_text() const
+	{
+		return m_error_text.get();
+	}
 
 protected:
 	//WinINet initialization
@@ -91,17 +94,13 @@ protected:
 	const uint32_t m_connect_retry;
 
 	//Thread-safety
-	Sync::Mutex m_mutex_main;
+	Sync::Mutex m_mutex;
 
 	//Handle
 	void *m_hInternet;
 
 private:
 	//Listener support
-	mutable Sync::Mutex m_mutex_listeners;
-	std::set<AbstractListener*> m_listeners;
-
-	//Error message
-	mutable Sync::Mutex m_mutex_error_txt;
-	std::wstring m_error_text;
+	Sync::Interlocked<std::set<AbstractListener*>> m_listeners;
+	Sync::Interlocked<std::wstring> m_error_text;
 };

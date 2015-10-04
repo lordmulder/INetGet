@@ -81,4 +81,48 @@ namespace Sync
 	private:
 		const Event &m_event;
 	};
+
+	template<typename T>
+	class Interlocked
+	{
+	public:
+		Interlocked(const T &initial_value)
+		{
+			m_value = initial_value;
+		}
+
+		T get(void) const
+		{
+			T current;
+			{
+				Locker locker(m_mutex);
+				current = m_value; 
+			}
+			return current;
+		}
+
+		void set(const T &new_value)
+		{
+			Locker locker(m_mutex);
+			m_value = new_value; 
+		}
+
+		template<typename K>
+		void add(const K &new_value)
+		{
+			Locker locker(m_mutex);
+			m_value += new_value; 
+		}
+
+		template<typename K>
+		void insert(const K &new_value)
+		{
+			Locker locker(m_mutex);
+			m_value.insert(new_value); 
+		}
+
+	private:
+		mutable Mutex m_mutex;
+		T m_value;
+	};
 }

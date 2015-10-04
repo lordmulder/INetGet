@@ -49,12 +49,14 @@ NullSink::~NullSink(void)
 
 bool NullSink::open(void)
 {
+	Sync::Locker locker(m_mutex);
 	m_isOpen  = true;
 	return true;
 }
 
 bool NullSink::close(const bool& /*success*/)
 {
+	Sync::Locker locker(m_mutex);
 	m_isOpen  = false;
 	return true;
 }
@@ -65,6 +67,7 @@ bool NullSink::close(const bool& /*success*/)
 
 bool NullSink::write(uint8_t *const, const size_t&)
 {
+	Sync::Locker locker(m_mutex);
 	if(m_isOpen)
 	{
 		return true;

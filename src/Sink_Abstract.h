@@ -23,6 +23,8 @@
 
 #include <stdint.h>
 
+#include "Sync.h"
+
 class AbstractSink
 {
 public:
@@ -33,4 +35,7 @@ public:
 	virtual bool close(const bool &success) = 0;
 
 	virtual bool write(uint8_t *const buffer, const size_t &count) = 0;
+
+	//Thread-safety
+	Sync::Mutex m_mutex;
 };

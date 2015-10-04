@@ -49,6 +49,7 @@ StdOutSink::~StdOutSink(void)
 
 bool StdOutSink::open(void)
 {
+	Sync::Locker locker(m_mutex);
 	if(!ferror(stdout))
 	{
 		m_isOpen  = true;
@@ -59,6 +60,7 @@ bool StdOutSink::open(void)
 
 bool StdOutSink::close(const bool& /*success*/)
 {
+	Sync::Locker locker(m_mutex);
 	fflush(stdout);
 	m_isOpen  = false;
 	return true;
@@ -70,6 +72,7 @@ bool StdOutSink::close(const bool& /*success*/)
 
 bool StdOutSink::write(uint8_t *const buffer, const size_t &count)
 {
+	Sync::Locker locker(m_mutex);
 	if(m_isOpen)
 	{
 		if(count > 0)
