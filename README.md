@@ -240,6 +240,17 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## Changelog ##
 
+### Version 1.02 (2015-10-xx) ###
+
+* Moved all I/O operations into a separate "worker" thread in order to make the application more responsive.
+
+* Added "update" mode, i.e. re-download the existing file *only* if the server provides a *newer* version. Enable with  `--update` option.
+
+* Added  `--set-ftime` option to set the local file's "LastWrite" time-stamp to the "Last-Modified" time provided by the server.
+
+* Incomplete or failed downloads are now removed by default. You can use the `--keep-failed` option to retain incomplete files.
+
+
 ### Version 1.01 (2015-09-26) ###
 
 * Correctly show file size and remaining time for files larger than 4 GB, provided that the server sent a ``Content-Length`` field.
