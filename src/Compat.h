@@ -24,7 +24,11 @@
 #define ROUND(X) std::round((X))
 #else
 #define ISNAN(X) _isnan((X))
-double ROUND(const double &d);
+#include <cmath>
+static inline double ROUND(const double &d)
+{
+	return (d >= 0.0) ? floor(d + 0.5) : ceil(d - 0.5);
+}
 #endif
 
 #define DBL_TO_UINT32(X) (((X) < UINT32_MAX) ? uint32_t((X)) : UINT32_MAX)
