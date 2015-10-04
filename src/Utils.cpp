@@ -34,21 +34,6 @@
 #include <WinInet.h>
 
 //=============================================================================
-// ROUND
-//=============================================================================
-
-#if _MSC_VER < 1800
-
-double ROUND(const double &d)
-{
-	double tmp;
-	modf(((d >= 0.0) ? (d + 0.5) : (d - 0.5)), &tmp);
-	return tmp;
-}
-
-#endif //_MSC_VER
-
-//=============================================================================
 // TRIM STRING
 //=============================================================================
 
@@ -344,13 +329,14 @@ std::wstring Utils::nbytes_to_string(const double &count)
 
 	double value = count;
 	size_t index = 0;
-	while((value > 1000.0) && (index < 8))
+	while((value + 0.05 >= 1000.0) && (index < 8))
 	{
 		index++;
 		value /= 1024.0;
 	}
 
-	const size_t prec = (index > 0) ? ((value < 100.0) ? ((value < 10.0) ? 3 : 2) : 1) : 0;
+	const size_t prec = (index > 0) ? ((value + 0.005 < 100.0) ? ((value + 0.0005 < 10.0) ? 3 : 2) : 1) : 0;
+	//std::wcerr << value << L" --> " << prec << std::endl;
 
 	std::wostringstream str;
 	str << std::fixed << std::setprecision(prec) << value << L' ' << UNITS[index];
@@ -376,7 +362,7 @@ std::wstring Utils::second_to_string(const double &count)
 
 	double value = count;
 	size_t index = 0;
-	while((value > COUNT[index]) && (index < 5))
+	while((value + DBL_EPSILON >= COUNT[index]) && (index < 5))
 	{
 		value /= COUNT[index++];
 	}
@@ -389,7 +375,7 @@ std::wstring Utils::second_to_string(const double &count)
 	else if(index > 0)
 	{
 		double intpart; const double fracpart = modf(value, &intpart);
-		str << std::fixed << std::setprecision(0) << std::setw(0) << intpart << L':' << std::setw(2) << std::setfill(L'0') << (fracpart * 60.0) << L' ' << UNITS[index];
+		str << std::fixed << std::setprecision(0) << std::setw(0) << intpart << L':' << std::setw(2) << std::setfill(L'0') << floor(fracpart * 60.0) << L' ' << UNITS[index];
 	}
 	else
 	{

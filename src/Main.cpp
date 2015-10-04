@@ -498,7 +498,7 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 
 	//Finalize progress
 	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, rate_estimate, timer_rate, progress);
-	std::wcerr << L"\b\b\bdone\n\n" << std::endl;
+	std::wcerr << L"\b\b\bdone\n" << std::endl;
 
 	//Compute average download rate
 	const double total_time = timer_total.query();
