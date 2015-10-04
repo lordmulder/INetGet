@@ -213,33 +213,54 @@ static void print_response_info(const uint32_t &status_code, const uint64_t &fil
 	std::wcerr << std::endl;
 }
 
-static inline void print_progress(const std::wstring url_string, uint64_t total_bytes, const uint64_t &file_size, const double &current_rate, uint8_t &index)
+//=============================================================================
+// PRINT PROGRESS
+//=============================================================================
+
+typedef struct
+{
+	uint8_t spinner_index;
+	uint8_t update_counter;
+	double time_left;
+	double current_rate;
+	uint64_t total_bytes_last;
+}
+progress_t;
+
+static inline void print_progress(const std::wstring url_string, uint64_t total_bytes, const uint64_t &file_size, Average &rate_estimate, Timer &timer_rate, progress_t &context)
 {
 	static const wchar_t SPINNER[4] = { L'-', L'\\', L'|', L'/' };
 	const std::ios::fmtflags stateBackup(std::wcout.flags());
-	std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << L"\r[" << SPINNER[(index++) & 3] << L"] ";
+	std::wcerr << std::setprecision(1) << std::fixed << std::setw(0) << L"\r[" << SPINNER[(context.spinner_index++) & 3] << L"] ";
+
+	if(++context.update_counter >= 4)
+	{
+		context.current_rate = rate_estimate.update(double(total_bytes - context.total_bytes_last) / timer_rate.query());
+		timer_rate.reset();
+		context.total_bytes_last = total_bytes, context.update_counter = 0;
+	}
 
 	if(file_size != AbstractClient::SIZE_UNKNOWN)
 	{
 		const double percent = (file_size > 0.0) ? (100.0 * std::min(1.0, double(total_bytes) / double(file_size))) : 100.0;
-
-		if(!ISNAN(current_rate))
+		if(context.current_rate >= 0.0)
 		{
-			if(current_rate > 0.0)
+			if(context.current_rate > 0.0)
 			{
-				const double time_left = (total_bytes < file_size) ? (double(file_size - total_bytes) / current_rate) : 0.0;
-				if(time_left > 3)
+				const double eta_estimate = (total_bytes < file_size) ? (double(file_size - total_bytes) / context.current_rate) : 0.0;
+				context.time_left = (context.time_left >= 0.0) ? ((context.time_left * 0.666) + (eta_estimate * 0.334)) : eta_estimate;
+				if(context.time_left > 3)
 				{
-					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, " << Utils::second_to_string(time_left) << L" remaining...";
+					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(context.current_rate) << L"/s, " << Utils::second_to_string(context.time_left) << L" remaining...";
 				}
 				else
 				{
-					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, almost finished...";
+					std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(context.current_rate) << L"/s, almost finished...";
 				}
 			}
 			else
 			{
-				std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
+				std::wcerr << percent << L"% of " << Utils::nbytes_to_string(double(file_size)) << L" received, " << Utils::nbytes_to_string(context.current_rate) << L"/s, please stand by...";
 			}
 		}
 		else
@@ -253,9 +274,9 @@ static inline void print_progress(const std::wstring url_string, uint64_t total_
 	}
 	else
 	{
-		if(!ISNAN(current_rate))
+		if(context.current_rate >= 0.0)
 		{
-			std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, " << Utils::nbytes_to_string(current_rate) << L"/s, please stand by...";
+			std::wcerr << Utils::nbytes_to_string(double(total_bytes)) << L" received, " << Utils::nbytes_to_string(context.current_rate) << L"/s, please stand by...";
 		}
 		else
 		{
@@ -299,12 +320,7 @@ class ConnectorThread : public Thread
 public:
 	ConnectorThread(AbstractClient *const client, const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
 	:
-		m_client(client),
-		m_verb(verb),
-		m_url(url),
-		m_post_data(post_data),
-		m_referrer(referrer),
-		m_timestamp(timestamp)
+		m_client(client), m_verb(verb), m_url(url), m_post_data(post_data), m_referrer(referrer), m_timestamp(timestamp)
 	{
 		m_priority.set(3);
 	}
@@ -416,10 +432,8 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 	}
 
 	//Initialize local variables
-	uint8_t index = 0, update_counter = 0;
-	uint64_t total_bytes_last = 0ui64;
-	double current_rate = std::numeric_limits<double>::quiet_NaN();
-	Average rate_estimate(50);
+	Average rate_estimate(32);
+	progress_t progress = { 0, 0, -1.0, -1.0, 0ui64 };
 	Timer timer_total, timer_rate;
 
 	//Start thread
@@ -433,7 +447,7 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 
 	//Print progress
 	std::wcerr << L"Download in progress:" << std::endl;
-	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
+	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, rate_estimate, timer_rate, progress);
 
 	while(!transfer_thread->join(Zero::g_sigUserAbort, 250))
 	{
@@ -446,19 +460,10 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 			return EXIT_FAILURE;
 		}
 
-		//Update the transfer-rate estimate
-		if(++update_counter >= 4)
-		{
-			const uint64_t total_bytes = transfer_thread->get_transferred_bytes();
-			current_rate = rate_estimate.update(double(total_bytes - total_bytes_last) / timer_rate.query());
-			timer_rate.reset();
-			total_bytes_last = total_bytes, update_counter = 0;
-		}
-
 		//Update progress
 		if(!ABORTED_BY_USER)
 		{
-			print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
+			print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, rate_estimate, timer_rate, progress);
 		}
 	}
 
@@ -492,7 +497,7 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 	}
 
 	//Finalize progress
-	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
+	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, rate_estimate, timer_rate, progress);
 	std::wcerr << L"\b\b\bdone\n\n" << std::endl;
 
 	//Compute average download rate
