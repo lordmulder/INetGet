@@ -281,13 +281,58 @@ protected:
 	virtual void onMessage(const std::wstring message)
 	{
 		Sync::Locker locker(m_mutex);
-		if(!Zero::g_sigUserAbort.get())
+		if(!ABORTED_BY_USER)
 		{
 			std::wcerr << L"--> " << message << std::endl;
 		}
 	}
 private:
 	Sync::Mutex m_mutex;
+};
+
+//=============================================================================
+// CONNECTOR THREAD
+//=============================================================================
+
+class ConnectorThread : public Thread
+{
+public:
+	ConnectorThread(AbstractClient *const client, const http_verb_t &verb, const URL &url, const std::string &post_data, const std::wstring &referrer, const uint64_t &timestamp)
+	:
+		m_client(client),
+		m_verb(verb),
+		m_url(url),
+		m_post_data(post_data),
+		m_referrer(referrer),
+		m_timestamp(timestamp)
+	{
+		m_priority.set(3);
+	}
+	
+	static const uint32_t CONNECTION_COMPLETE = 0;
+	static const uint32_t CONNECTION_ERR_INET = 1;
+	static const uint32_t CONNECTION_ERR_ABRT = 3;
+
+protected:
+	virtual uint32_t main(void)
+	{
+		if(!m_client->open(m_verb, m_url, m_post_data, m_referrer, m_timestamp))
+		{
+			set_error_text(m_client->get_error_text());
+			return CONNECTION_ERR_INET;
+		}
+
+		return is_stopped() ? CONNECTION_ERR_ABRT : CONNECTION_COMPLETE;
+	}
+
+private:
+	AbstractClient *const m_client;
+
+	const http_verb_t &m_verb;
+	const URL &m_url;
+	const std::string &m_post_data;
+	const std::wstring &m_referrer;
+	const uint64_t &m_timestamp;
 };
 
 //=============================================================================
@@ -397,7 +442,6 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 		{
 			std::wcerr << L"\b\b\babort!\n"<< std::endl;
 			transfer_thread->stop(1500, true);
-			sink->close(false);
 			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 			return EXIT_FAILURE;
 		}
@@ -449,11 +493,21 @@ static int transfer_file(AbstractClient *const client, const std::wstring &url_s
 
 	//Finalize progress
 	print_progress(url_string, transfer_thread->get_transferred_bytes(), file_size, current_rate, index);
+	std::wcerr << L"\b\b\bdone\n\n" << std::endl;
+
+	//Compute average download rate
 	const double total_time = timer_total.query();
 	const double average_rate = double(transfer_thread->get_transferred_bytes()) / total_time;
 
+	//Check for user abort
+	if(ABORTED_BY_USER)
+	{
+		std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
 	//Flush and close the sink
-	std::wcerr << L"\b\b\bdone\n\nFlushing output buffers... " << std::flush;
+	std::wcerr << L"Flushing output buffers... " << std::flush;
 	sink->close(true);
 
 	//Report total time and average download rate
@@ -478,34 +532,54 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 
 	//Create the HTTPS connection/request
 	std::wcerr << L"Connecting to " << url.getHostName() << L':' << url.getPortNo() << L", please wait..." << std::endl;
-	if(!client->open(http_verb, url, post_data_encoded, referrer, timestamp_existing))
+	std::unique_ptr<ConnectorThread> connector_thread (new ConnectorThread(client, http_verb, url, post_data_encoded, referrer, timestamp_existing));
+	if(!connector_thread->start())
 	{
-		std::wcerr << std::endl;
 		TRIGGER_SYSTEM_SOUND(alert, false);
+		std::wcerr << L"ERROR: Failed to start the file connector thread!\n" << std::endl;
+		return EXIT_FAILURE;
+	}
+
+	//Wait for connection
+	while(!connector_thread->join(125))
+	{
+		//Check for user abort
 		if(ABORTED_BY_USER)
 		{
+			std::wcerr << L"--> Aborting!\n"<< std::endl;
+			connector_thread->stop(1500, true);
 			std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
+			return EXIT_FAILURE;
 		}
-		else
-		{
-			const std::wstring error_text = client->get_error_text();
-			if(!error_text.empty())
-			{
-				std::wcerr << error_text << L'\n' << std::endl;
-			}
-			std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
-		}
-		return EXIT_FAILURE;
 	}
 
 	//Add extra space
 	std::wcerr << std::endl;
 
-	//Initialize local variables
-	bool success;
-	uint32_t status_code;
-	std::wstring content_type, content_encd;
-	uint64_t file_size, timestamp;
+	//Check thread result
+	const uint32_t thread_result = connector_thread->get_result();
+	if(thread_result != ConnectorThread::CONNECTION_COMPLETE)
+	{
+		const std::wstring error_text = connector_thread->get_error_text();
+		switch(thread_result)
+		{
+		case ConnectorThread::CONNECTION_ERR_INET:
+			if(!error_text.empty())
+			{
+				std::wcerr << error_text << L'\n' << std::endl;
+			}
+			std::wcerr << "ERROR: Connection could not be established!\n" << std::endl;
+			break;
+		case ConnectorThread::CONNECTION_ERR_ABRT:
+			std::wcerr << L"ERROR: The operation has been aborted !!!\n" << std::endl;
+			break;
+		default:
+			std::wcerr << L"ERROR: The operation failed for an unknwon reason!\n" << std::endl;
+			break;
+		}
+		TRIGGER_SYSTEM_SOUND(alert, false);
+		return EXIT_FAILURE;
+	}
 
 	//Check for user abort
 	if(ABORTED_BY_USER)
@@ -513,6 +587,12 @@ static int retrieve_url(AbstractClient *const client, const std::wstring &url_st
 		std::wcerr << L"SIGINT: Operation aborted by the user !!!\n" << std::endl;
 		return EXIT_FAILURE;
 	}
+
+	//Initialize local variables
+	bool success;
+	uint32_t status_code;
+	std::wstring content_type, content_encd;
+	uint64_t file_size, timestamp;
 
 	//Query result information
 	if(!client->result(success, status_code, file_size, timestamp, content_type, content_encd))

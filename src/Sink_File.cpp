@@ -95,7 +95,6 @@ bool FileSink::close(const bool &success)
 		}
 	}
 
-
 	m_handle = NULL;
 	return okay;
 }
