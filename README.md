@@ -189,7 +189,7 @@ Pre-compiled binaries of *INetGet* are available from the official download mirr
 
 * <https://github.com/lordmulder/INetGet/releases/latest>
 
-* <https://bitbucket.org/lord_mulder/inetget/downloads>
+* <https://bitbucket.org/muldersoft/inetget/downloads>
 
 * <http://sourceforge.net/projects/muldersoft/files/INetGet/>
 
@@ -201,9 +201,9 @@ The source codes of *INetGet* are available from the official [**Git**](http://g
 
 * `git clone https://github.com/lordmulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://github.com/lordmulder/INetGet))
 
-* `git clone https://bitbucket.org/lord_mulder/inetget.git INetGet-src` &nbsp; ([Browse](https://bitbucket.org/lord_mulder/inetget/))
+* `git clone https://bitbucket.org/muldersoft/inetget.git INetGet-src` &nbsp; ([Browse](https://bitbucket.org/muldersoft/inetget/))
 
-* `git clone https://gitlab.com/lord_mulder/INetGet.git INetGet-src` &nbsp; ([Browse](https://gitlab.com/lord_mulder/INetGet))
+* `git clone https://gitlab.com/muldersoft/INetGet.git INetGet-src` &nbsp; ([Browse](https://gitlab.com/muldersoft/INetGet))
 
 * `git clone https://git.assembla.com/inetget.git INetGet-src` &nbsp; ([Browse](https://www.assembla.com/spaces/inetget/git/source))
 
