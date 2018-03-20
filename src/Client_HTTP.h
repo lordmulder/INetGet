@@ -27,7 +27,7 @@ class HttpClient : public AbstractClient
 {
 public:
 	//Constructor & destructor
-	HttpClient(const Sync::Signal &user_aborted, const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, const bool &insecure = false, const bool &force_crl = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
+	HttpClient(const Sync::Signal &user_aborted, const bool &disable_proxy = false, const std::wstring &userAgentStr = std::wstring(), const bool &no_redir = false, uint64_t range_start = 0U, uint64_t range_end = UINT64_MAX, const bool &insecure = false, const bool &force_crl = false, const double &timeout_con = -1.0, const double &timeout_rcv = -1.0, const uint32_t &connect_retry = 3, const bool &verbose = false);
 	virtual ~HttpClient(void);
 
 	//Connection handling
@@ -63,6 +63,8 @@ private:
 	const bool m_insecure_tls;
 	const bool m_force_crl;
 	const bool m_disable_redir;
+	const uint64_t m_range_start;
+	const uint64_t m_range_end;
 
 	//Current status
 	uint32_t m_current_status;

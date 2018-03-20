@@ -45,7 +45,7 @@ static const wchar_t *const HTTP_VER_11      = L"HTTP/1.1";
 static const wchar_t *const ACCEPTED_TYPES[] = { L"*/*", NULL };
 static const wchar_t *const TYPE_FORM_DATA   = L"Content-Type: application/x-www-form-urlencoded";
 static const wchar_t *const MODIFIED_SINCE   = L"If-Modified-Since: ";
-
+static const wchar_t *const RANGE_BYTES      = L"Range: bytes=";
 //Macros
 #define OPTIONAL_FLAG(X,Y,Z) do \
 { \
@@ -57,10 +57,12 @@ while(0)
 // CONSTRUCTOR / DESTRUCTOR
 //=============================================================================
 
-HttpClient::HttpClient(const Sync::Signal &user_aborted, const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, const bool &insecure, const bool &force_crl, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
+HttpClient::HttpClient(const Sync::Signal &user_aborted, const bool &disableProxy, const std::wstring &userAgentStr, const bool &no_redir, uint64_t range_start, uint64_t range_end, const bool &insecure, const bool &force_crl, const double &timeout_con, const double &timeout_rcv, const uint32_t &connect_retry, const bool &verbose)
 :
 	AbstractClient(user_aborted, disableProxy, userAgentStr, timeout_con, timeout_rcv, connect_retry, verbose),
 	m_disable_redir(no_redir),
+	m_range_start(range_start),
+	m_range_end(range_end),
 	m_insecure_tls(insecure),
 	m_force_crl(force_crl),
 	m_hConnection(NULL),
@@ -258,7 +260,7 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	OPTIONAL_FLAG(flags, m_disable_proxy, INTERNET_FLAG_PRAGMA_NOCACHE);
 
 	//Try to create the HTTP request
-	m_hRequest = HttpOpenRequest(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, CSTR(referrer), (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
+	m_hRequest = HttpOpenRequestW(m_hConnection, http_verb_str(verb), CSTR(path + query), HTTP_VER_11, CSTR(referrer), (LPCWSTR*)ACCEPTED_TYPES, flags, intptr_t(this));
 	if(m_hRequest == NULL)
 	{
 		const DWORD error_code = GetLastError();
@@ -282,6 +284,17 @@ bool HttpClient::create_request(const bool &use_tls, const http_verb_t &verb, co
 	if(timestamp > TIME_UNKNOWN)
 	{
 		headers << MODIFIED_SINCE << Utils::timestamp_to_str(timestamp) << std::endl;
+	}
+	if((m_range_start > 0U) || (m_range_end != UINT64_MAX))
+	{
+		if(m_range_end != UINT64_MAX)
+		{
+			headers << RANGE_BYTES << m_range_start << '-' << m_range_end << std::endl;
+		}
+		else
+		{
+			headers << RANGE_BYTES << m_range_start << '-' << std::endl;
+		}
 	}
 
 	//Setup retry point

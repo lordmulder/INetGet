@@ -240,16 +240,17 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## Changelog ##
 
-### Version 1.02 (2015-10-xx) ###
+### Version 1.02 (2018-03-20) ###
 
 * All blocking I/O operations have been moved to separate "worker" threads in order to make the application more responsive.
 
 * Added "update" mode, i.e. re-download the existing file *only* if the server provides a *newer* version. Enable with  `--update` option.
 
-* Added  `--set-ftime` option to set the local file's "LastWrite" time-stamp to the "Last-Modified" time provided by the server.
+* Added `--set-ftime` option to set the local file's "LastWrite" time-stamp to the "Last-Modified" time provided by the server.
 
 * Incomplete or failed downloads are now removed by default. You can use the `--keep-failed` option to retain incomplete files.
 
+* Added options `--range-off` and `--range-end` to specify the byte range (offset and end address) to be downloaded.
 
 ### Version 1.01 (2015-09-26) ###
 
@@ -260,7 +261,6 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 * Update console window title in order to show the current INetGet progress. Restores original title on exit.
 
 * Added support for setting INetGet options via configuration files. Use `--config=<cf>` option to load a configuration file.
-
 
 ### Version 1.00 (2015-09-21) ###
 

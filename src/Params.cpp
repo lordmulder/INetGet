@@ -89,6 +89,20 @@ while(0)
 } \
 while(0)
 
+#define PARSE_UINT64(X) do \
+{ \
+	try \
+	{ \
+		(X) = (_wcsicmp(option_val.c_str(), L"infinite") == 0) ? UINT64_MAX : std::stoull(option_val); \
+	} \
+	catch(std::exception&) \
+	{ \
+		std::wcerr << L"ERROR: Numeric value \"" << option_val << "\" could not be parsed!\n" << std::endl; \
+		return false; \
+	} \
+} \
+while(0)
+
 #define PARSE_DOUBLE(X) do \
 { \
 	try \
@@ -113,6 +127,8 @@ Params::Params(void)
 	m_bShowHelp(false),
 	m_bDisableProxy(false),
 	m_bDisableRedir(false),
+	m_uRangeStart(0),
+	m_uRangeEnd(UINT64_MAX),
 	m_bInsecure(false),
 	m_bEnableAlert(false),
 	m_bForceCrl(false),
@@ -208,6 +224,12 @@ bool Params::validate(const bool &is_final)
 	if((!m_strReferrer.empty()) && (!URL(m_strReferrer).isComplete()))
 	{
 		std::wcerr << L"ERROR: The specified referrer address is invalid!\n" << std::endl;
+		return false;
+	}
+
+	if(m_uRangeEnd < m_uRangeStart)
+	{
+		std::wcerr << L"ERROR: The specified byte range is invalid!\n" << std::endl;
 		return false;
 	}
 
@@ -358,6 +380,18 @@ bool Params::processOption(const std::wstring &option_key, const std::wstring &o
 	{
 		ENSURE_NOVAL();
 		return (m_bInsecure = true);
+	}
+	else if(IS_OPTION("range-off"))
+	{
+		ENSURE_VALUE();
+		PARSE_UINT64(m_uRangeStart);
+		return true;
+	}
+	else if(IS_OPTION("range-end"))
+	{
+		ENSURE_VALUE();
+		PARSE_UINT64(m_uRangeEnd);
+		return true;
 	}
 	else if(IS_OPTION("refer"))
 	{

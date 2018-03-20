@@ -129,27 +129,29 @@ static void print_help_screen(void)
 		<< L"  <output_file> : Specifies the output file, you can specify \"-\" for STDOUT\n"
 		<< L'\n'
 		<< L"Optional:\n"
-		<< L"  --verb=<verb> : Specify the HTTP method (verb) to be used, default is GET\n"
-		<< L"  --data=<data> : Append data to request, in 'x-www-form-urlencoded' format\n"
-		<< L"  --no-proxy    : Don't use proxy server for address resolution\n"
-		<< L"  --agent=<str> : Overwrite the default 'user agent' string used by INetGet\n"
-		<< L"  --no-redir    : Disable automatic redirection, enabled by default\n"
-		<< L"  --insecure    : Don't fail, if server certificate is invalid (HTTPS only)\n"
-		<< L"  --refer=<url> : Include the given 'referrer' address in the request\n"
-		<< L"  --notify      : Trigger a system sound when the download completed/failed\n"
-		<< L"  --time-cn=<n> : Specifies the connection timeout, in seconds\n"
-		<< L"  --time-rc=<n> : Specifies the receive timeout, in seconds\n"
-		<< L"  --timeout=<n> : Specifies the connection & receive timeouts, in seconds\n"
-		<< L"  --retry=<n>   : Specifies the max. number of connection attempts\n"
-		<< L"  --no-retry    : Do not retry, if the connection failed (i.e. '--retry=0')\n"
-		<< L"  --force-crl   : Make the connection fail, if CRL could *not* be retrieved\n"
-		<< L"  --set-ftime   : Set the file's Creation/LastWrite time to 'Last-Modified'\n"
-		<< L"  --update      : Update (replace) local file, iff server has newer version\n"
-		<< L"  --keep-failed : Keep the incomplete output file, when download has failed\n"
-		<< L"  --config=<cf> : Read INetGet options from specified configuration file(s)\n"
-		<< L"  --help        : Show this help screen\n"
-		<< L"  --slunk       : Enable slunk mode, this is intended for kendo master only\n"
-		<< L"  --verbose     : Enable detailed diagnostic output (for debugging)\n"
+		<< L"  --verb=<verb>   : Specify the HTTP method (verb) to be used, default is GET\n"
+		<< L"  --data=<data>   : Append data to request, in 'x-www-form-urlencoded' format\n"
+		<< L"  --no-proxy      : Don't use proxy server for address resolution\n"
+		<< L"  --agent=<str>   : Overwrite the default 'user agent' string used by INetGet\n"
+		<< L"  --no-redir      : Disable automatic redirection, enabled by default\n"
+		<< L"  --range-off=<n> : Set the offset (start) of the byte range to be downloaded\n"
+		<< L"  --range-end=<n> : Set the end of the byte range to be downloaded\n"
+		<< L"  --insecure      : Don't fail, if server certificate is invalid (HTTPS only)\n"
+		<< L"  --refer=<url>   : Include the given 'referrer' address in the request\n"
+		<< L"  --notify        : Trigger a system sound when the download completed/failed\n"
+		<< L"  --time-cn=<n>   : Specifies the connection timeout, in seconds\n"
+		<< L"  --time-rc=<n>   : Specifies the receive timeout, in seconds\n"
+		<< L"  --timeout=<n>   : Specifies the connection & receive timeouts, in seconds\n"
+		<< L"  --retry=<n>     : Specifies the max. number of connection attempts\n"
+		<< L"  --no-retry      : Do not retry, if the connection failed (i.e. '--retry=0')\n"
+		<< L"  --force-crl     : Make the connection fail, if CRL could *not* be retrieved\n"
+		<< L"  --set-ftime     : Set the file's Creation/LastWrite time to 'Last-Modified'\n"
+		<< L"  --update        : Update (replace) local file, iff server has newer version\n"
+		<< L"  --keep-failed   : Keep the incomplete output file, when download has failed\n"
+		<< L"  --config=<cf>   : Read INetGet options from specified configuration file(s)\n"
+		<< L"  --help          : Show this help screen\n"
+		<< L"  --slunk         : Enable slunk mode, this is intended for kendo master only\n"
+		<< L"  --verbose       : Enable detailed diagnostic output (for debugging)\n"
 		<< L'\n'
 		<< L"Examples:\n"
 		<< L"  INetGet.exe http://www.warr.org/buckethead.html output.html\n"
@@ -167,7 +169,7 @@ static bool create_client(std::unique_ptr<AbstractClient> &client, AbstractListe
 		break;
 	case INTERNET_SCHEME_HTTP:
 	case INTERNET_SCHEME_HTTPS:
-		client.reset(new HttpClient(Zero::g_sigUserAbort, params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getInsecure(), params.getForceCrl(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
+		client.reset(new HttpClient(Zero::g_sigUserAbort, params.getDisableProxy(), params.getUserAgent(), params.getDisableRedir(), params.getRangeStart(), params.getRangeEnd(), params.getInsecure(), params.getForceCrl(), params.getTimeoutCon(), params.getTimeoutRcv(), params.getRetryCount(), params.getVerboseMode()));
 		break;
 	default:
 		client.reset();

@@ -42,6 +42,8 @@ public:
 	inline const bool         &getDisableProxy (void) const { return m_bDisableProxy; }
 	inline const std::wstring &getUserAgent    (void) const { return m_strUserAgent;  }
 	inline const bool         &getDisableRedir (void) const { return m_bDisableRedir; }
+	inline const uint64_t     &getRangeStart   (void) const { return m_uRangeStart;   }
+	inline const uint64_t     &getRangeEnd     (void) const { return m_uRangeEnd;     }
 	inline const bool         &getInsecure     (void) const { return m_bInsecure;     }
 	inline const std::wstring &getReferrer     (void) const { return m_strReferrer;   }
 	inline const bool         &getEnableAlert  (void) const { return m_bEnableAlert;  }
@@ -72,6 +74,8 @@ private:
 	bool         m_bDisableProxy;
 	std::wstring m_strUserAgent;
 	bool         m_bDisableRedir;
+	uint64_t     m_uRangeStart;
+	uint64_t     m_uRangeEnd;
 	bool         m_bInsecure;
 	std::wstring m_strReferrer;
 	bool         m_bEnableAlert;
