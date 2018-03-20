@@ -84,10 +84,18 @@ static void setup_error_handlers(void)
 	SetUnhandledExceptionFilter(my_exception_handler);
 	_set_invalid_parameter_handler(my_invalid_param_handler);
 
-	typedef BOOL (WINAPI *SetDllDirectoryPtr)(LPCWSTR lpPathName);
-	if(const SetDllDirectoryPtr set_dll_directory = (SetDllDirectoryPtr) GetProcAddress(GetModuleHandle(L"kernel32.dll"), "SetDllDirectoryW"))
+	if(const HMODULE hKernel32 = GetModuleHandleW(L"kernel32.dll"))
 	{
-		set_dll_directory(L""); /*don'tload DLL from "current" directory*/
+		typedef BOOL (WINAPI *SetDefaultDllDirectoriesT)(DWORD flags);
+		if(const SetDefaultDllDirectoriesT set_default_dll_directories = (SetDefaultDllDirectoriesT) GetProcAddress(hKernel32, "SetDefaultDllDirectories"))
+		{
+			set_default_dll_directories(0x0800); /*LOAD_LIBRARY_SEARCH_SYSTEM32*/
+		}
+		typedef BOOL (WINAPI *SetDllDirectoryT)(LPCWSTR lpPathName);
+		if(const SetDllDirectoryT set_dll_directory = (SetDllDirectoryT) GetProcAddress(hKernel32, "SetDllDirectoryW"))
+		{
+			set_dll_directory(L""); /*remove current directory from search path*/
+		}
 	}
 }
 
