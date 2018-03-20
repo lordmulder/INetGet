@@ -350,7 +350,7 @@ void HttpClient::update_status(const uint32_t &status, const uintptr_t &info)
 		std::wostringstream status_info;
 		switch(status)
 		{
-			case INTERNET_STATUS_DETECTING_PROXY:      status_info << "Detetcing proxy server..."                       ; break;
+			case INTERNET_STATUS_DETECTING_PROXY:      status_info << "Detecting proxy server..."                       ; break;
 			case INTERNET_STATUS_RESOLVING_NAME:       status_info << "Resolving host name..."                          ; break;
 			case INTERNET_STATUS_NAME_RESOLVED:        status_info << "Server address resolved to: " << status_str(info); break;
 			case INTERNET_STATUS_CONNECTING_TO_SERVER: status_info << "Connecting to server..."                         ; break;
