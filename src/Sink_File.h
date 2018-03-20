@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // INetGet - Lightweight command-line front-end to WinINet API
-// Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
+// Copyright (C) 2018 LoRd_MuldeR <MuldeR2@GMX.de>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License

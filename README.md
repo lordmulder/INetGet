@@ -217,7 +217,7 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## License ##
 
-**INetGet is Copyright &copy; 2015 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
+**INetGet is Copyright &copy; 2018 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
 **This software is released under the GNU General Public License (&ldquo;GPL&rdquo;), version 2.**
 
 	This program is free software; you can redistribute it and/or

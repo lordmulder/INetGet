@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 // INetGet - Lightweight command-line front-end to WinINet API
-// Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
+// Copyright (C) 2018 LoRd_MuldeR <MuldeR2@GMX.de>
 //
 // This program is free software; you can redistribute it and/or
 // modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ BEGIN
             VALUE "ProductName",      "INetGet - Lightweight command-line front-end to WinINet API"
             VALUE "FileDescription",  "INetGet - Lightweight command-line front-end to WinINet API"
             VALUE "CompanyName",      "Muldersoft.com"
-            VALUE "LegalCopyright",   "Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>"
+            VALUE "LegalCopyright",   "Copyright (C) 2015-2018 LoRd_MuldeR <MuldeR2@GMX.de>"
             VALUE "LegalTrademarks",  "This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License <http://www.gnu.org/>"
             VALUE "InternalName",     "INetGet"
             VALUE "OriginalFilename", "INetGet.exe"
