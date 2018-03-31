@@ -3,7 +3,7 @@ setlocal enabledelayedexpansion
 
 REM ///////////////////////////////////////////////////////////////////////////
 REM // INetGet - Lightweight command-line front-end to WinINet API
-REM // Copyright (C) 2015 LoRd_MuldeR <MuldeR2@GMX.de>
+REM // Copyright (C) 2018 LoRd_MuldeR <MuldeR2@GMX.de>
 REM ///////////////////////////////////////////////////////////////////////////
 
 echo Preparing to build INetGet, please wait...
@@ -31,10 +31,21 @@ if not exist "%INETGET_PDOC_PATH%\pandoc.exe" (
 	goto BuildError
 )
 
+if not exist "%INETGET_HTMC_PATH%\htmlcompressor-1.5.3.jar" (
+	echo Html Compressor was not found. Please check your INETGET_HTMC_PATH var^^!
+	goto BuildError
+)
+
+if not exist "%JAVA_HOME%\bin\java.exe" (
+	echo Java runtime executable was not found. Please check your JAVA_HOME var^^!
+	goto BuildError
+)
+
 REM ///////////////////////////////////////////////////////////////////////////
 REM // Setup environment
 REM ///////////////////////////////////////////////////////////////////////////
 
+set "PATH=%INETGET_HTMC_PATH%;%PATH%"
 call "%INETGET_MSVC_PATH%\vcvarsall.bat" x86
 
 REM ///////////////////////////////////////////////////////////////////////////
@@ -126,9 +137,6 @@ if not "!ERRORLEVEL!"=="0" goto BuildError
 copy "%~dp0\bin\v%INETGET_TOOL_VERS%\.\x64\Release\INetGet.exe" "%PACK_PATH%\INetGet.x64.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
-copy "%~dp0\etc\doc\GPLv2.html" "%PACK_PATH%\LICENSE.html"
-if not "!ERRORLEVEL!"=="0" goto BuildError
-
 copy "%~dp0\img\inetget\*.png"  "%PACK_PATH%\img\inetget"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
@@ -138,8 +146,13 @@ REM ///////////////////////////////////////////////////////////////////////////
 REM // Final Processing
 REM ///////////////////////////////////////////////////////////////////////////
 
-"%INETGET_PDOC_PATH%\pandoc.exe" --from markdown_github+pandoc_title_block+header_attributes+implicit_figures --to html5 -H "%~dp0\etc\doc\Style.inc" --standalone "%~dp0\README.md" --output "%PACK_PATH%\README.html"
-if not "!ERRORLEVEL!"=="0" goto BuildError
+for %%i in (*.md) do (
+	echo %%~ni --^> "%PACK_PATH%\%%~ni.html"
+	"%INETGET_PDOC_PATH%\pandoc.exe" --from markdown_github+pandoc_title_block+header_attributes+implicit_figures --to html5 -H "%~dp0\etc\doc\Style.inc" --standalone "%%~i" | "%JAVA_HOME%\bin\java.exe" -jar "%INETGET_HTMC_PATH%\htmlcompressor-1.5.3.jar" --compress-css  --compress-js -o "%PACK_PATH%\%%~ni.html"
+	if not "!ERRORLEVEL!"=="0" goto BuildError
+)
+
+pause
 
 "%INETGET_UPX3_PATH%\upx.exe" --brute "%PACK_PATH%\*.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
@@ -151,7 +164,7 @@ REM // Create version tag
 REM ///////////////////////////////////////////////////////////////////////////
 
 echo INetGet - Lightweight command-line front-end to WinINet API>                      "%PACK_PATH%\BUILD_TAG"
-echo Copyright (C) 2015 LoRd_MuldeR ^<MuldeR2@GMX.de^>>>                               "%PACK_PATH%\BUILD_TAG"
+echo Copyright (C) 2018 LoRd_MuldeR ^<MuldeR2@GMX.de^>>>                               "%PACK_PATH%\BUILD_TAG"
 echo.>>                                                                                "%PACK_PATH%\BUILD_TAG"
 echo Version %VER_MAJOR%.%VER_MINOR%-%VER_PATCH%. Built on %ISO_DATE%, at %ISO_TIME%>> "%PACK_PATH%\BUILD_TAG"
 echo.>>                                                                                "%PACK_PATH%\BUILD_TAG"

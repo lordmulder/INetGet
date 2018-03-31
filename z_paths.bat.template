@@ -3,4 +3,5 @@
 set "INETGET_MSVC_PATH=C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC"
 set "INETGET_UPX3_PATH=C:\Program Files (x86)\UPX"
 set "INETGET_PDOC_PATH=C:\Program Files (x86)\Pandoc"
+set "INETGET_HTMC_PATH=C:\Program Files (x86)\HTMLCompressor\bin"
 set "INETGET_TOOL_VERS=100"

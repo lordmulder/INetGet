@@ -124,6 +124,16 @@ The following options *may* be included, in an arbitrary order:
   Update mode is implemented by reading the "LastWrite" time-stamp of the existing output file. If successful, a corresponding `If-Modified-Since` field is added to the HTTP request.
   The server *should* reject the request with status `304` (Not Modified), if **no** newer version is available. If the specified output file does **not** exist, INetGet will downloaded the file unconditionally.
 
+* **`--range-off=<n>`**  
+  Specifies the start address (offset) of the byte range to be download. If this option (or `--range-end`) is set, then INetGet will include a "Range" header in the HTTP request.
+  By default, INetGet does *not* include a "Range" header in the request, which means that the *complete* file will be download. Use this option if you want to download a file *partially*.
+  ***Warning:*** Whether support for partial downloads (aka "resume support") is available, this *totally* depends on the individual download server!
+
+* **`--range-end=<n>`**  
+  Specifies the end address of the byte range to be download. If this option (or `--range-off`) is set, then INetGet will include a "Range" header in the HTTP request.
+  By default, INetGet does *not* include a "Range" header in the request, which means that the *complete* file will be download. Use this option if you want to download a file *partially*.
+  ***Warning:*** Whether support for partial downloads (aka "resume support") is available, this *totally* depends on the individual download server!
+
 * **`--keep-failed`**  
   If specified, INetGet will retain an *incomplete* output file, if the download has failed or it has been aborted. Otherwise, INetGet tries to delete the *incomplete* file, if something went wrong.
 
