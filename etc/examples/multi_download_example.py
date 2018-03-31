@@ -54,18 +54,18 @@ try:
 	process = Popen(['INetGet.exe', '--verb=HEAD', ADDRESS, devnull], stderr=PIPE)
 	stdout, stderr = process.communicate()
 except:
-	sys.stdout.write('\nERROR: Failed to launch INetGet process! Is INetGet.exe in path?\n\n')
+	sys.stdout.write('\nERROR: Failed to launch INetGet process! Is INetGet.exe in the path?\n\n')
 	raise
 
 if not process.returncode == 0:
-    sys.stdout.write('ERROR: Failed to determine file size!\n\n')
+    sys.stdout.write('\nERROR: Failed to determine file size! Please see INetGet log below for details.\n\n')
     sys.stdout.write(stderr.decode("utf-8"))
     sys.exit(-1)
 
 match = re.search(r"Content\s+length\s*:\s*(\d+)\s*Byte", stderr.decode("utf-8"), re.IGNORECASE)
 
 if not match:
-    sys.stdout.write('\nERROR: Failed to determine file size!\n\n')
+    sys.stdout.write('\nERROR: Failed to determine file size! Does the server offer "resume" support?\n\n')
     sys.stdout.write(stderr.decode("utf-8"))
     sys.exit(-1)
 
@@ -75,7 +75,11 @@ size_total = int(match.group(1))
 sys.stdout.write('Total file size is: %d Byte\n\n' % size_total)
 
 if size_total < 1:
-    sys.stdout.write('\nERROR: File appears to be empty!\n\n')
+    sys.stdout.write('\nERROR: The requested file appears to be empty!\n\n')
+    sys.exit(-1)
+
+if size_total < (NCHUNKS * 1024):
+    sys.stdout.write('\nERROR: The requested file is too small for chunk\'ed download!\n\n')
     sys.exit(-1)
 
 
