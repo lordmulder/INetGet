@@ -130,6 +130,7 @@ set "PACK_PATH=%TMP%\~%RANDOM%%RANDOM%.tmp"
 mkdir "%PACK_PATH%"
 mkdir "%PACK_PATH%\img"
 mkdir "%PACK_PATH%\img\inetget"
+mkdir "%PACK_PATH%\examples"
 
 copy "%~dp0\bin\v%INETGET_TOOL_VERS%\Win32\Release\INetGet.exe" "%PACK_PATH%\INetGet.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
@@ -137,7 +138,10 @@ if not "!ERRORLEVEL!"=="0" goto BuildError
 copy "%~dp0\bin\v%INETGET_TOOL_VERS%\.\x64\Release\INetGet.exe" "%PACK_PATH%\INetGet.x64.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
-copy "%~dp0\img\inetget\*.png"  "%PACK_PATH%\img\inetget"
+copy "%~dp0\img\inetget\*.png" "%PACK_PATH%\img\inetget"
+if not "!ERRORLEVEL!"=="0" goto BuildError
+
+copy "%~dp0\etc\examples\*example*" "%PACK_PATH%\examples"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
 echo.

@@ -227,7 +227,7 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## License ##
 
-**INetGet is Copyright &copy; 2018 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
+**INetGet is Copyright &copy; 2015-2018 LoRd_MuldeR <<MuldeR2@GMX.de>>. Some rights reserved.**  
 **This software is released under the GNU General Public License (&ldquo;GPL&rdquo;), version 2.**
 
 	This program is free software; you can redistribute it and/or
@@ -250,7 +250,7 @@ For bug reports, feature requests and patch submissions, please refer to the **i
 
 ## Changelog ##
 
-### Version 1.02 (2018-03-20) ###
+### Version 1.02 (2018-03-31) ###
 
 * All blocking I/O operations have been moved to separate "worker" threads in order to make the application more responsive.
 
