@@ -156,8 +156,6 @@ for %%i in (*.md) do (
 	if not "!ERRORLEVEL!"=="0" goto BuildError
 )
 
-pause
-
 "%INETGET_UPX3_PATH%\upx.exe" --brute "%PACK_PATH%\*.exe"
 if not "!ERRORLEVEL!"=="0" goto BuildError
 
