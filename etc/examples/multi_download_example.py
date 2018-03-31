@@ -28,10 +28,20 @@ from os import devnull
 from shutil import copyfileobj
 from time import sleep
 
-# Parameters
-ADDRESS = 'http://cdimage.ubuntu.com/ubuntu-core/16/current/ubuntu-core-16-amd64.img.xz'
-NCHUNKS = 5
-OUTNAME = 'ubuntu-core-16-amd64.img.xz'
+sys.stdout.write('INetGet multi-download *example* script\n\n')
+
+if (len(sys.argv) < 4) or (not sys.argv[1].strip()) or (not sys.argv[2].strip()) or (not sys.argv[3].strip()):
+    sys.stdout.write('Usage:\n   multi_download_example.py <num_chunks> <download_url> <out_filename>\n\n')
+    sys.stdout.write('Example:\n   multi_download_example.py 5 \\\n      http://releases.ubuntu.com/16.04.4/ubuntu-16.04.4-desktop-amd64.iso \\\n      ubuntu-16.04.4-desktop-amd64.iso\n\n')
+    sys.exit(-1)
+
+NCHUNKS = int(sys.argv[1])
+ADDRESS = sys.argv[2].strip()
+OUTNAME = sys.argv[3].strip()
+
+if (NCHUNKS < 1) or (NCHUNKS > 9):
+    sys.stdout.write('ERROR: The number of chunks must be in the 1 to 9 range!\n\n')
+    sys.exit(-1)
 
 
 ##############################################################################
@@ -40,8 +50,12 @@ OUTNAME = 'ubuntu-core-16-amd64.img.xz'
 
 sys.stdout.write('Determining file size, please wait...\n')
 
-process = Popen(['INetGet.exe', '--verb=HEAD', ADDRESS, devnull], stderr=PIPE)
-stdout, stderr = process.communicate()
+try:
+	process = Popen(['INetGet.exe', '--verb=HEAD', ADDRESS, devnull], stderr=PIPE)
+	stdout, stderr = process.communicate()
+except:
+	sys.stdout.write('\nERROR: Failed to launch INetGet process! Is INetGet.exe in path?\n\n')
+	raise
 
 if not process.returncode == 0:
     sys.stdout.write('ERROR: Failed to determine file size!\n\n')
@@ -79,42 +93,50 @@ while size_rmndr >= NCHUNKS:
 sys.stdout.write('Chunksize: %d\n'   % size_chunk)
 sys.stdout.write('Remainder: %d\n\n' % size_rmndr)
 
-offset = 0
-file_no = 0
 proc_list = []
+offset, file_no = 0, 0
+
+digits = len(str(size_total - 1))
+format = 'Chunk #%%d range: %%0%dd - %%0%dd\n' % (digits, digits)
 
 if size_chunk > 0:
     for i in range(0, NCHUNKS):
         range_end = offset + size_chunk - 1 + (0 if (i < NCHUNKS-1) else size_rmndr) #add remainder to *last* chunk!
-        sys.stdout.write('Chunk #%d: %d - %d\n' % (file_no, offset, range_end))
+        sys.stdout.write(format % (file_no, offset, range_end))
         proc_list.append(Popen(['INetGet.exe', '--range-off=%d' % offset, '--range-end=%d' % range_end, ADDRESS, OUTNAME+"~%d" % file_no], creationflags=CREATE_NEW_CONSOLE))
         offset, file_no = offset + size_chunk, file_no + 1
-        sleep(1)
+        sleep(.25)
 
-sys.stdout.write('\nDownloads are running, please be patient...\n')
+sys.stdout.write('\nDownloads are running in the background, please be patient...\n')
 
 
 ##############################################################################
 # STEP #3: Wait for completion...
 ##############################################################################
 
-proc_id = 0
 success = True
+procs_completed = []
 
-while len(proc_list) > 0:
-    subproc = proc_list.pop(0)
-    subproc.communicate()
-    if subproc.returncode == 0:
-        sys.stdout.write('Chunk #%d succeeded.\n' % proc_id)
-    else:
-        sys.stdout.write('Chunk #%d failed !!!\n' % proc_id)
-        success = False
-    proc_id = proc_id + 1
+while len(procs_completed) < len(proc_list):
+    for i in range(0, len(proc_list)):
+        subproc = proc_list[i]
+        if subproc in procs_completed:
+            continue
+        retval = subproc.poll()
+        if retval == None:
+            continue;
+        procs_completed.append(subproc)
+        if retval != 0:
+            sys.stdout.write('Chunk #%d failed !!!\n' % i)
+            success = False
+            break
+        sys.stdout.write('Chunk #%d succeeded.\n' % i)
+    sleep(.01)
 
 if success:
     sys.stdout.write('Completed.\n\n')
 else:
-    sys.stdout.write('Failed !!!\n\n')
+    sys.stdout.write('\nERROR: At least one chunk failed to download!\n\n')
     sys.exit(-1)
 
 
