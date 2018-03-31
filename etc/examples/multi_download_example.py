@@ -30,17 +30,37 @@ from time import sleep
 
 sys.stdout.write('INetGet multi-download *example* script\n\n')
 
-if (len(sys.argv) < 4) or (not sys.argv[1].strip()) or (not sys.argv[2].strip()) or (not sys.argv[3].strip()):
-    sys.stdout.write('Usage:\n   multi_download_example.py <num_chunks> <download_url> <out_filename>\n\n')
+if (len(sys.argv) < 4) or (sys.argv[1].lower() == '--help') or (sys.argv[1] == '/?'):
+    sys.stdout.write('Usage:\n   multi_download_example.py [options] <num_chunks> <download_url> <out_filename>\n\n')
+    sys.stdout.write('Options:\n   --no-progress  Do not display progress output of sub-processes\n\n')
     sys.stdout.write('Example:\n   multi_download_example.py 5 \\\n      http://releases.ubuntu.com/16.04.4/ubuntu-16.04.4-desktop-amd64.iso \\\n      ubuntu-16.04.4-desktop-amd64.iso\n\n')
     sys.exit(-1)
 
-NCHUNKS = int(sys.argv[1])
-ADDRESS = sys.argv[2].strip()
-OUTNAME = sys.argv[3].strip()
+arg_offset, hidden_mode = 1, False
+while sys.argv[arg_offset].startswith('--'):
+    switch_name = sys.argv[arg_offset][2:].lower()
+    if not switch_name:
+        break
+    if switch_name == "no-progress":
+        hidden_mode = True
+    else:
+        sys.stdout.write('WARNING: Unknown switch "%s" was ignored!\n\n' % sys.argv[arg_offset])
+    arg_offset = arg_offset + 1
+
+if arg_offset+2 >= len(sys.argv):
+    sys.stdout.write('ERROR: At least one required argument is missing! Use "--help" for details.\n\n')
+    sys.exit(-1)
+
+NCHUNKS = int(sys.argv[arg_offset]) if sys.argv[arg_offset].isdigit() else 0
+ADDRESS = sys.argv[arg_offset+1].strip()
+OUTNAME = sys.argv[arg_offset+2].strip()
 
 if (NCHUNKS < 1) or (NCHUNKS > 9):
-    sys.stdout.write('ERROR: The number of chunks must be in the 1 to 9 range!\n\n')
+    sys.stdout.write('ERROR: The number of chunks must be within the 1 to 9 range!\n\n')
+    sys.exit(-1)
+
+if (not ADDRESS) or (not OUTNAME):
+    sys.stdout.write('ERROR: The download URL or the output file name is empty!\n\n')
     sys.exit(-1)
 
 
@@ -107,7 +127,8 @@ if size_chunk > 0:
     for i in range(0, NCHUNKS):
         range_end = offset + size_chunk - 1 + (0 if (i < NCHUNKS-1) else size_rmndr) #add remainder to *last* chunk!
         sys.stdout.write(format % (file_no, offset, range_end))
-        proc_list.append(Popen(['INetGet.exe', '--range-off=%d' % offset, '--range-end=%d' % range_end, ADDRESS, OUTNAME+"~%d" % file_no], creationflags=CREATE_NEW_CONSOLE))
+        proc_list.append(Popen(['INetGet.exe', '--range-off=%d' % offset, '--range-end=%d' % range_end, ADDRESS, OUTNAME+"~chunk%d" % file_no], \
+            stderr = (PIPE if hidden_mode else None), creationflags = (0 if hidden_mode else CREATE_NEW_CONSOLE)))
         offset, file_no = offset + size_chunk, file_no + 1
         sleep(.25)
 
@@ -135,7 +156,7 @@ while len(procs_completed) < len(proc_list):
             success = False
             break
         sys.stdout.write('Chunk #%d succeeded.\n' % i)
-    sleep(.01)
+    sleep(.015625)
 
 if success:
     sys.stdout.write('Completed.\n\n')
@@ -153,7 +174,7 @@ sys.stdout.write('Concatenating chunks, please wait...\n')
 with open(OUTNAME, 'wb') as wfd:
     file_no = 0
     for i in range(0, NCHUNKS):
-        with open(OUTNAME+"~%d" % file_no, 'rb') as fd:
+        with open(OUTNAME+"~chunk%d" % file_no, 'rb') as fd:
             copyfileobj(fd, wfd)
             file_no = file_no + 1
 
