@@ -23,28 +23,36 @@ import sys
 import re
 import math
 
-from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
-from os import devnull
+from os import devnull, remove
+from subprocess import Popen, PIPE, DEVNULL, CREATE_NEW_CONSOLE
 from shutil import copyfileobj
 from time import sleep
 
 sys.stdout.write('INetGet multi-download *example* script\n\n')
 
 if (len(sys.argv) < 4) or (sys.argv[1].lower() == '--help') or (sys.argv[1] == '/?'):
-    sys.stdout.write('Usage:\n   multi_download_example.py [options] <num_chunks> <download_url> <out_filename>\n\n')
-    sys.stdout.write('Options:\n   --no-progress  Do not display progress output of sub-processes\n\n')
-    sys.stdout.write('Example:\n   multi_download_example.py 5 \\\n      http://releases.ubuntu.com/16.04.4/ubuntu-16.04.4-desktop-amd64.iso \\\n      ubuntu-16.04.4-desktop-amd64.iso\n\n')
+    sys.stdout.write('Usage:\n')
+    sys.stdout.write('   multi_download_example.py [options] <num_chunks> <download_url> <out_filename>\n\n')
+    sys.stdout.write('Options:\n')
+    sys.stdout.write('   --no-progress  Do not display progress output of sub-processes\n\n')
+    sys.stdout.write('Example:\n')
+    sys.stdout.write('   multi_download_example.py 5 \\\n')
+    sys.stdout.write('      http://releases.ubuntu.com/16.04.4/ubuntu-16.04.4-desktop-amd64.iso \\\n')
+    sys.stdout.write('      ubuntu-16.04.4-desktop-amd64.iso\n\n')
+    sys.stdout.write('Note: Additional options will be passed through to INetGet.\n\n')
     sys.exit(-1)
 
-arg_offset, hidden_mode = 1, False
+arg_offset, hidden_mode, extra_args = 1, False, []
 while sys.argv[arg_offset].startswith('--'):
-    switch_name = sys.argv[arg_offset][2:].lower()
+    switch_name = sys.argv[arg_offset][2:].lower().split("=")[0]
     if not switch_name:
         break
     if switch_name == "no-progress":
         hidden_mode = True
+    elif (switch_name == "range-end") or (switch_name == "range-off") or (switch_name == "verb"):
+        sys.stdout.write('WARNING: Switch "%s" is ignored!\n\n' % sys.argv[arg_offset])
     else:
-        sys.stdout.write('WARNING: Unknown switch "%s" was ignored!\n\n' % sys.argv[arg_offset])
+        extra_args.append(sys.argv[arg_offset])
     arg_offset = arg_offset + 1
 
 if arg_offset+2 >= len(sys.argv):
@@ -55,12 +63,12 @@ NCHUNKS = int(sys.argv[arg_offset]) if sys.argv[arg_offset].isdigit() else 0
 ADDRESS = sys.argv[arg_offset+1].strip()
 OUTNAME = sys.argv[arg_offset+2].strip()
 
-if (NCHUNKS < 1) or (NCHUNKS > 9):
-    sys.stdout.write('ERROR: The number of chunks must be within the 1 to 9 range!\n\n')
+if (not ADDRESS) or (not OUTNAME):
+    sys.stdout.write('ERROR: The download URL ("%s") or the output file name ("%s") is empty!\n\n' % (sys.argv[arg_offset+1], sys.argv[arg_offset+2]))
     sys.exit(-1)
 
-if (not ADDRESS) or (not OUTNAME):
-    sys.stdout.write('ERROR: The download URL or the output file name is empty!\n\n')
+if (NCHUNKS < 1) or (NCHUNKS > 9):
+    sys.stdout.write('ERROR: The number of chunks ("%s") must be within the 1 to 9 range!\n\n' % sys.argv[arg_offset])
     sys.exit(-1)
 
 
@@ -71,11 +79,11 @@ if (not ADDRESS) or (not OUTNAME):
 sys.stdout.write('Determining file size, please wait...\n')
 
 try:
-	process = Popen(['INetGet.exe', '--verb=HEAD', ADDRESS, devnull], stderr=PIPE)
-	stdout, stderr = process.communicate()
+    process = Popen(['INetGet.exe', '--verb=HEAD', *extra_args, ADDRESS, devnull], stderr=PIPE)
+    stdout, stderr = process.communicate()
 except:
-	sys.stdout.write('\nERROR: Failed to launch INetGet process! Is INetGet.exe in the path?\n\n')
-	raise
+    sys.stdout.write('\nERROR: Failed to launch INetGet process! Is INetGet.exe in the path?\n\n')
+    raise
 
 if not process.returncode == 0:
     sys.stdout.write('\nERROR: Failed to determine file size! Please see INetGet log below for details.\n\n')
@@ -127,8 +135,10 @@ if size_chunk > 0:
     for i in range(0, NCHUNKS):
         range_end = offset + size_chunk - 1 + (0 if (i < NCHUNKS-1) else size_rmndr) #add remainder to *last* chunk!
         sys.stdout.write(format % (file_no, offset, range_end))
-        proc_list.append(Popen(['INetGet.exe', '--range-off=%d' % offset, '--range-end=%d' % range_end, ADDRESS, OUTNAME+"~chunk%d" % file_no], \
-            stderr = (PIPE if hidden_mode else None), creationflags = (0 if hidden_mode else CREATE_NEW_CONSOLE)))
+        proc_list.append(Popen(['INetGet.exe', \
+            '--range-off=%d' % offset, '--range-end=%d' % range_end, *extra_args,
+            ADDRESS, OUTNAME+"~chunk%d" % file_no], \
+            stderr = (DEVNULL if hidden_mode else None), creationflags = (0 if hidden_mode else CREATE_NEW_CONSOLE)))
         offset, file_no = offset + size_chunk, file_no + 1
         sleep(.25)
 
@@ -171,11 +181,19 @@ else:
 
 sys.stdout.write('Concatenating chunks, please wait...\n')
 
-with open(OUTNAME, 'wb') as wfd:
-    file_no = 0
-    for i in range(0, NCHUNKS):
-        with open(OUTNAME+"~chunk%d" % file_no, 'rb') as fd:
-            copyfileobj(fd, wfd)
-            file_no = file_no + 1
+try:
+    with open(OUTNAME, 'wb') as wfd:
+        for i in range(0, NCHUNKS):
+            with open(OUTNAME+"~chunk%d" % i, 'rb') as fd:
+                copyfileobj(fd, wfd)
+except:
+    sys.stdout.write('\nERROR: Failed to concatenate chunk files. Out of space?\n\n')
+    raise
 
 sys.stdout.write('Done.\n\n')
+
+try:
+    for i in range(0, NCHUNKS):
+        remove(OUTNAME+"~chunk%d" % i)
+except:
+    sys.stdout.write('\nWARNING: Failed to remove temporary files!\n\n')
